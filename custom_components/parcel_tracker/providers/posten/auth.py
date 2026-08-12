@@ -3,7 +3,7 @@
 The Posten app uses the OAuth2 authorization-code grant:
 
 1. Open ``{ID_BASE}{OAUTH_SERVICE}/authorizations/new`` in a browser, where the
-   user authenticates (BankID). The browser is redirected to
+   user authenticates (Vipps or phone number). The browser is redirected to
    ``posten://login?code=...`` — a custom scheme Home Assistant cannot receive,
    so the user pastes the code back manually.
 2. Exchange the code at ``{ID_BASE}{OAUTH_SERVICE}/accesstoken`` for an

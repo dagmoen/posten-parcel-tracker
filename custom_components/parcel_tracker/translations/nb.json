@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Logg inn hos Posten",
-        "description": "1. Åpne denne lenken i en nettleser og logg inn med BankID:\n\n{authorize_url}\n\n2. Etter innlogging blir nettleseren omdirigert til en adresse som starter med `posten://login?code=...`. Siden kan feile å åpne — det er forventet.\n\n3. Kopier hele adressen (eller bare `code`-verdien) og lim den inn nedenfor.",
+        "description": "1. Åpne denne lenken i en nettleser og logg inn med Vipps eller telefonnummer:\n\n{authorize_url}\n\n2. Etter innlogging blir nettleseren omdirigert til en adresse som starter med `posten://login?code=...`. Siden kan feile å åpne — det er forventet.\n\n3. Kopier hele adressen (eller bare `code`-verdien) og lim den inn nedenfor.",
         "data": {
           "auth_code": "Autorisasjonskode eller omdirigerings-URL"
         }

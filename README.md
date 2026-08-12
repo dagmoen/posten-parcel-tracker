@@ -25,7 +25,7 @@ carriers can be added later without touching the Home Assistant platform code.
 
 ## What it does
 
-- Logs in to your Posten account with **BankID** (OAuth2 authorization-code flow).
+- Logs in to your Posten account with **Vipps or your phone number** (OAuth2 authorization-code flow).
 - Fetches all **incoming** parcels associated with your account.
 - Normalizes each carrier's status into a common model.
 - Exposes aggregate sensors plus (optionally) one sensor per parcel.
@@ -71,7 +71,7 @@ as `raw_status`:
 1. Go to **Settings → Devices & Services → Add Integration** and choose
    **Parcel Tracker**.
 2. The dialog shows a **login link**. Open it in a browser and log in with
-   **BankID**.
+   **Vipps** or your **phone number**.
 3. After login your browser is redirected to an address starting with
    `posten://login?code=...`. This page will usually fail to open — **that is
    expected**. Copy the whole address (or just the `code=` value) from the
@@ -84,9 +84,10 @@ with the same steps.
 
 ### Posten/Bring authentication requirements
 
-- A personal Posten account and **BankID** are required to log in.
+- A personal Posten account is required; you log in with **Vipps** or your
+  **phone number**.
 - The integration stores an OAuth **refresh token** in Home Assistant and uses
-  it to obtain short-lived access tokens. Your BankID credentials are never seen
+  it to obtain short-lived access tokens. Your login credentials are never seen
   or stored by the integration.
 - No Mybring business account or API key is needed (that is a separate,
   sender-oriented product).
@@ -206,7 +207,7 @@ automation:
 
 ## Privacy & security
 
-- Authentication uses OAuth tokens; **your BankID credentials are never seen or
+- Authentication uses OAuth tokens; **your login credentials are never seen or
   stored** by the integration.
 - Tokens are stored in Home Assistant's config entry storage. Diagnostics output
   **redacts** tokens and personal fields (tracking numbers, sender, pickup

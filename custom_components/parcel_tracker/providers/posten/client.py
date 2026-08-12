@@ -12,9 +12,13 @@ from .. import (
 )
 from .auth import PostenAuth
 from .const import (
+    ACCEPT_LANGUAGE,
+    ANDROID_VERSION,
     API_BASE,
+    APP_VERSION,
     PARCEL_LIST_PATH,
     PARCEL_SERVICE,
+    PLATFORM,
     REQUEST_TIMEOUT,
     USER_AGENT,
 )
@@ -35,6 +39,12 @@ class PostenClient:
             "Authorization": f"Bearer {access_token}",
             "User-Agent": USER_AGENT,
             "Accept": "application/json",
+            "Accept-Language": ACCEPT_LANGUAGE,
+            # App-identifying headers the backend requires (see const.py).
+            "X-Native-App": "true",
+            "App-Version": APP_VERSION,
+            "Platform": PLATFORM,
+            "OS-Version": ANDROID_VERSION,
         }
         try:
             async with async_timeout.timeout(REQUEST_TIMEOUT):
