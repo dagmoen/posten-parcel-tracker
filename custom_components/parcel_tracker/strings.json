@@ -1,0 +1,43 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Log in to Posten",
+        "description": "1. Open this link in a browser and log in with BankID:\n\n{authorize_url}\n\n2. After logging in, your browser is redirected to an address starting with `posten://login?code=...`. The page may fail to open — that is expected.\n\n3. Copy that whole address (or just the `code` value) and paste it below.",
+        "data": {
+          "auth_code": "Authorization code or redirect URL"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The authorization code was rejected. Please try logging in again.",
+      "cannot_connect": "Could not reach Posten. Check your connection and try again."
+    },
+    "abort": {
+      "already_configured": "This Posten account is already set up.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Parcel Tracker options",
+        "data": {
+          "scan_interval_minutes": "Polling interval (minutes)",
+          "delivered_retention_days": "Days to keep delivered parcels",
+          "show_delivered": "Show delivered parcels",
+          "enable_package_entities": "Create individual package entities"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "active": { "name": "Active parcels" },
+      "arriving_today": { "name": "Arriving today" },
+      "ready_for_pickup": { "name": "Ready for pickup" },
+      "delivered": { "name": "Delivered recently" },
+      "next_delivery": { "name": "Next delivery" }
+    }
+  }
+}

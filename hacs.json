@@ -1,0 +1,6 @@
+{
+  "name": "Parcel Tracker (Posten/Bring)",
+  "render_readme": true,
+  "homeassistant": "2024.8.0",
+  "content_in_root": false
+}

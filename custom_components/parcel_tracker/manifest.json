@@ -1,0 +1,11 @@
+{
+  "domain": "parcel_tracker",
+  "name": "Parcel Tracker",
+  "codeowners": ["@dagmoen"],
+  "config_flow": true,
+  "documentation": "https://github.com/dagmoen/posten-parcel-tracker",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/dagmoen/posten-parcel-tracker/issues",
+  "requirements": ["async-timeout>=4.0.0"],
+  "version": "0.1.0"
+}
