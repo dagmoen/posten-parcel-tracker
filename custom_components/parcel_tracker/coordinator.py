@@ -155,6 +155,9 @@ class ParcelUpdateCoordinator(DataUpdateCoordinator[ParcelData]):
             "status_text": parcel.status_text,
             "sender": parcel.sender,
             "name": parcel.name,
+            "delivery_type": parcel.delivery_type,
+            "delivery_method": parcel.delivery_type_label,
+            "pickup_location": parcel.pickup_location,
         }
         if extra:
             data.update(extra)
