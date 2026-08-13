@@ -137,9 +137,42 @@ def _parse_events(data: dict[str, Any]) -> list[ParcelEvent]:
                 time=_parse_datetime(
                     _first(item, "dateTime", "time", "timestamp", "date")
                 ),
+                location=_as_str(_first(item, "city", "location", "place")),
             )
         )
     return events
+
+
+def _int_or_none(value: Any) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _float_or_none(value: Any) -> float | None:
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    return result if result > 0 else None
+
+
+def _delivery_window(data: dict[str, Any]) -> tuple[Any, Any, Any]:
+    """Return (window_start, window_end, on_track) datetimes/bool if present."""
+    delivery = data.get("delivery")
+    if not isinstance(delivery, dict):
+        return None, None, None
+    delivery_time = delivery.get("deliveryTime")
+    if not isinstance(delivery_time, dict):
+        return None, None, None
+    window = delivery_time.get("deliveryWindow")
+    start = end = None
+    if isinstance(window, dict):
+        start = _parse_datetime(window.get("start"))
+        end = _parse_datetime(window.get("end"))
+    on_track = delivery_time.get("onTrack")
+    return start, end, on_track if isinstance(on_track, bool) else None
 
 
 def parse_parcel(data: dict[str, Any]) -> Parcel | None:
@@ -174,17 +207,38 @@ def parse_parcel(data: dict[str, Any]) -> Parcel | None:
     if not tracking_url and tracking_number:
         tracking_url = TRACKING_URL_TEMPLATE.format(parcel_id=tracking_number)
 
+    delivery = data.get("delivery") if isinstance(data.get("delivery"), dict) else {}
+    recipient = data.get("recipient") if isinstance(data.get("recipient"), dict) else {}
+    dimensions = data.get("dimensions") if isinstance(data.get("dimensions"), dict) else {}
+    transport = data.get("transport") if isinstance(data.get("transport"), dict) else {}
+    window_start, window_end, on_track = _delivery_window(data)
+
     return Parcel(
         parcel_id=parcel_id,
         status=status,
         raw_status=raw_status,
         carrier=CARRIER_NAME,
         tracking_number=tracking_number,
+        consignment_number=_as_str(_first(data, "consignmentNumber", "shipmentNumber")),
         sender=_sender_name(data),
+        recipient_name=_as_str(recipient.get("name")),
+        recipient_address=_as_str(recipient.get("address")),
+        recipient_postal_code=_as_str(recipient.get("postalCode")),
+        recipient_city=_as_str(recipient.get("city")),
         name=name,
         status_text=status_text or raw_status,
         expected_delivery=_expected_delivery(data),
+        delivery_window_start=window_start,
+        delivery_window_end=window_end,
+        on_track=on_track,
+        delivery_type=_as_str(delivery.get("type")),
         pickup_location=_pickup_location(data),
+        weight_kg=_float_or_none(data.get("weightInKg")),
+        length_cm=_int_or_none(dimensions.get("lengthInCm")),
+        width_cm=_int_or_none(dimensions.get("widthInCm")),
+        height_cm=_int_or_none(dimensions.get("heightInCm")),
+        transport_type=_as_str(transport.get("type")),
+        product_name=_as_str(data.get("productName")),
         tracking_url=tracking_url,
         direction=_as_str(_first(data, "direction")),
         events=_parse_events(data),

@@ -35,8 +35,6 @@
     "sensor": {
       "active": { "name": "Active parcels" },
       "arriving_today": { "name": "Arriving today" },
-      "ready_for_pickup": { "name": "Ready for pickup" },
-      "delivered": { "name": "Delivered recently" },
       "next_delivery": { "name": "Next delivery" }
     }
   }

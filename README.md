@@ -98,23 +98,71 @@ with the same steps.
 
 | Entity | Description |
 |---|---|
-| `sensor.parcel_tracker_active_parcels` | Number of active parcels |
+| `sensor.parcel_tracker_active_parcels` | Number of incoming (active) parcels |
 | `sensor.parcel_tracker_arriving_today` | Parcels expected today |
-| `sensor.parcel_tracker_ready_for_pickup` | Parcels ready for pickup |
-| `sensor.parcel_tracker_delivered_recently` | Recently delivered parcels |
 | `sensor.parcel_tracker_next_delivery` | Date of the next expected delivery |
 
-The **Next delivery** sensor exposes these attributes when available:
-`tracking_number`, `carrier`, `sender`, `status`, `status_text`,
-`expected_delivery`, `pickup_location`, `latest_event`, `latest_event_time`,
-`tracking_url`.
+The **Active parcels** sensor exposes a `packages` attribute: a list of all
+incoming parcels, each a dict with the fields below. This is convenient for a
+single dashboard card that lists everything without extra add-ons.
 
-If **individual package entities** are enabled (default), each parcel also gets
-its own `sensor.*` whose state is the normalized status and whose attributes
-carry the full parcel details.
+If **individual package entities** are enabled (default), each **incoming**
+parcel also gets its own `sensor.*` (named after the sender) whose state is the
+normalized status and whose attributes carry the full detail:
+
+`kollinummer` (parcel number), `sendingsnummer` (consignment number), `sender`,
+`recipient`, `recipient_address`, `recipient_postal_code`, `recipient_city`,
+`status`, `status_text`, `delivery_method` (Home delivery / Mailbox delivery /
+Pickup point / …), `expected_delivery`, `delivery_window_start`,
+`delivery_window_end`, `on_track`, `weight_kg`, `dimensions`, `transport`,
+`carrier`, `tracking_url`, `latest_event`, `latest_event_time`, and `tracking`
+(the full event history as a list of `{time, description, location}`).
+
+Delivered/archived parcels do not get their own entity — only what's currently
+incoming, so the dashboard stays clean.
 
 > Exact entity IDs depend on your Home Assistant naming; the table shows the
 > default slugs.
+
+## Dashboard
+
+You can list incoming parcels with a **Markdown card** (no custom cards needed),
+driven by the `packages` attribute:
+
+```yaml
+type: markdown
+title: Incoming parcels
+content: >-
+  {% for p in state_attr('sensor.parcel_tracker_active_parcels', 'packages') %}
+  ### 📦 {{ p.sender }}
+  **Method:** {{ p.delivery_method }}{% if p.expected_delivery %} · **ETA:** {{
+  p.expected_delivery }}{% if p.delivery_window_start %} ({{
+  as_timestamp(p.delivery_window_start) | timestamp_custom('%H:%M') }}–{{
+  as_timestamp(p.delivery_window_end) | timestamp_custom('%H:%M') }}){% endif %}{%
+  endif %}
+  **Status:** {{ p.status_text or p.status }}
+  _{{ p.latest_event }}_
+  {% else %}
+  No incoming parcels right now.
+  {% endfor %}
+```
+
+To drill into one parcel, add an **Entities card** (each package entity opens a
+dialog showing all attributes), or a Markdown card for a specific parcel:
+
+```yaml
+type: entities
+title: Parcels
+entities:
+  - entity: sensor.parcel_tracker_active_parcels
+filter:
+  include:
+    - entity_id: sensor.parcel_tracker_*
+```
+
+For an auto-updating per-parcel list you can also install the
+[auto-entities](https://github.com/thomasloven/lovelace-auto-entities) custom
+card and filter on `integration: parcel_tracker`.
 
 ---
 

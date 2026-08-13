@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -23,48 +24,29 @@ from .const import (
 )
 from .coordinator import ParcelData, ParcelUpdateCoordinator
 from .models import Parcel
+from .serialize import parcel_to_dict
 
 
 @dataclass(frozen=True, kw_only=True)
 class ParcelSensorDescription(SensorEntityDescription):
     """Describes an aggregate parcel sensor."""
 
-    value_fn: Callable[[ParcelData], int | str | None]
+    value_fn: Callable[[ParcelData], int | date | None]
     attributes_fn: Callable[[ParcelData], dict] | None = None
 
 
-def _next_delivery_value(data: ParcelData) -> str | None:
+def _next_delivery_value(data: ParcelData) -> date | None:
     parcel = data.next_delivery
-    if parcel is None:
-        return None
-    if parcel.expected_delivery is not None:
-        return parcel.expected_delivery.isoformat()
-    return parcel.name or parcel.tracking_number
+    return parcel.expected_delivery if parcel else None
 
 
 def _next_delivery_attributes(data: ParcelData) -> dict:
     parcel = data.next_delivery
-    if parcel is None:
-        return {}
-    latest = parcel.latest_event
-    return {
-        "tracking_number": parcel.tracking_number,
-        "carrier": parcel.carrier,
-        "sender": parcel.sender,
-        "status": parcel.status.value,
-        "status_text": parcel.status_text,
-        "expected_delivery": (
-            parcel.expected_delivery.isoformat()
-            if parcel.expected_delivery
-            else None
-        ),
-        "pickup_location": parcel.pickup_location,
-        "latest_event": latest.description if latest else None,
-        "latest_event_time": (
-            latest.time.isoformat() if latest and latest.time else None
-        ),
-        "tracking_url": parcel.tracking_url,
-    }
+    return parcel_to_dict(parcel) if parcel else {}
+
+
+def _active_attributes(data: ParcelData) -> dict:
+    return {"packages": [parcel_to_dict(p) for p in data.active]}
 
 
 SENSOR_DESCRIPTIONS: tuple[ParcelSensorDescription, ...] = (
@@ -75,6 +57,7 @@ SENSOR_DESCRIPTIONS: tuple[ParcelSensorDescription, ...] = (
         native_unit_of_measurement="parcels",
         state_class="measurement",
         value_fn=lambda data: len(data.active),
+        attributes_fn=_active_attributes,
     ),
     ParcelSensorDescription(
         key="arriving_today",
@@ -83,22 +66,6 @@ SENSOR_DESCRIPTIONS: tuple[ParcelSensorDescription, ...] = (
         native_unit_of_measurement="parcels",
         state_class="measurement",
         value_fn=lambda data: len(data.arriving_today),
-    ),
-    ParcelSensorDescription(
-        key="ready_for_pickup",
-        translation_key="ready_for_pickup",
-        icon="mdi:package-up",
-        native_unit_of_measurement="parcels",
-        state_class="measurement",
-        value_fn=lambda data: len(data.ready_for_pickup),
-    ),
-    ParcelSensorDescription(
-        key="delivered",
-        translation_key="delivered",
-        icon="mdi:package-variant",
-        native_unit_of_measurement="parcels",
-        state_class="measurement",
-        value_fn=lambda data: len(data.delivered),
     ),
     ParcelSensorDescription(
         key="next_delivery",
@@ -131,9 +98,11 @@ async def async_setup_entry(
 
         @callback
         def _add_new_parcels() -> None:
+            # Only create per-package entities for incoming (active) parcels, so
+            # the dashboard isn't cluttered with delivered/archived items.
             new_entities: list[SensorEntity] = []
             for parcel in coordinator.data.parcels:
-                if parcel.parcel_id in known:
+                if not parcel.is_active or parcel.parcel_id in known:
                     continue
                 known.add(parcel.parcel_id)
                 new_entities.append(
@@ -177,7 +146,7 @@ class ParcelAggregateSensor(
         self._attr_device_info = _device_info(entry)
 
     @property
-    def native_value(self) -> int | str | None:
+    def native_value(self) -> int | date | None:
         return self.entity_description.value_fn(self.coordinator.data)
 
     @property
@@ -190,7 +159,7 @@ class ParcelAggregateSensor(
 class ParcelPackageSensor(
     CoordinatorEntity[ParcelUpdateCoordinator], SensorEntity
 ):
-    """One sensor per individual parcel; state is the normalized status."""
+    """One sensor per incoming parcel; state is the normalized status."""
 
     _attr_has_entity_name = True
     _attr_icon = "mdi:package"
@@ -220,8 +189,8 @@ class ParcelPackageSensor(
     @property
     def name(self) -> str:
         parcel = self._parcel
-        if parcel and parcel.name:
-            return parcel.name
+        if parcel and parcel.sender:
+            return parcel.sender
         return f"Parcel {self._parcel_id}"
 
     @property
@@ -232,25 +201,4 @@ class ParcelPackageSensor(
     @property
     def extra_state_attributes(self) -> dict | None:
         parcel = self._parcel
-        if parcel is None:
-            return None
-        latest = parcel.latest_event
-        return {
-            "tracking_number": parcel.tracking_number,
-            "carrier": parcel.carrier,
-            "sender": parcel.sender,
-            "status": parcel.status.value,
-            "status_text": parcel.status_text,
-            "raw_status": parcel.raw_status,
-            "expected_delivery": (
-                parcel.expected_delivery.isoformat()
-                if parcel.expected_delivery
-                else None
-            ),
-            "pickup_location": parcel.pickup_location,
-            "latest_event": latest.description if latest else None,
-            "latest_event_time": (
-                latest.time.isoformat() if latest and latest.time else None
-            ),
-            "tracking_url": parcel.tracking_url,
-        }
+        return parcel_to_dict(parcel) if parcel else None

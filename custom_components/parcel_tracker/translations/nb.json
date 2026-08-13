@@ -35,8 +35,6 @@
     "sensor": {
       "active": { "name": "Aktive pakker" },
       "arriving_today": { "name": "Ankommer i dag" },
-      "ready_for_pickup": { "name": "Klar for henting" },
-      "delivered": { "name": "Nylig levert" },
       "next_delivery": { "name": "Neste levering" }
     }
   }

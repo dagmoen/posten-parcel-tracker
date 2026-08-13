@@ -49,6 +49,18 @@ class ParcelEvent:
     description: str | None = None
     status: ParcelStatus | None = None
     time: datetime | None = None
+    location: str | None = None
+
+
+# Human-readable labels for the provider delivery types.
+DELIVERY_TYPE_LABELS: dict[str, str] = {
+    "home_delivery": "Home delivery",
+    "mailbox_delivery": "Mailbox delivery",
+    "pib_delivery": "Pickup point",
+    "parcel_locker_delivery": "Parcel locker",
+    "parcel_robot_delivery": "Delivery robot",
+    "personal_delivery": "Personal delivery",
+}
 
 
 @dataclass(slots=True)
@@ -64,14 +76,46 @@ class Parcel:
     raw_status: str | None = None
     carrier: str = "unknown"
     tracking_number: str | None = None
+    consignment_number: str | None = None
     sender: str | None = None
+    recipient_name: str | None = None
+    recipient_address: str | None = None
+    recipient_postal_code: str | None = None
+    recipient_city: str | None = None
     name: str | None = None
     status_text: str | None = None
     expected_delivery: date | None = None
+    delivery_window_start: datetime | None = None
+    delivery_window_end: datetime | None = None
+    on_track: bool | None = None
+    delivery_type: str | None = None
     pickup_location: str | None = None
+    weight_kg: float | None = None
+    length_cm: int | None = None
+    width_cm: int | None = None
+    height_cm: int | None = None
+    transport_type: str | None = None
+    product_name: str | None = None
     tracking_url: str | None = None
     direction: str | None = None
     events: list[ParcelEvent] = field(default_factory=list)
+
+    @property
+    def delivery_type_label(self) -> str | None:
+        """Human-readable delivery method, e.g. 'Home delivery'."""
+        if not self.delivery_type:
+            return None
+        return DELIVERY_TYPE_LABELS.get(
+            self.delivery_type, self.delivery_type.replace("_", " ").capitalize()
+        )
+
+    @property
+    def dimensions_cm(self) -> str | None:
+        """Package size as 'L × W × H cm', or None if unknown."""
+        dims = (self.length_cm, self.width_cm, self.height_cm)
+        if all(d is None for d in dims):
+            return None
+        return " × ".join("?" if d is None else str(d) for d in dims) + " cm"
 
     @property
     def latest_event(self) -> ParcelEvent | None:
