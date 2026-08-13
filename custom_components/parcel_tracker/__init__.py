@@ -11,9 +11,11 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_ACCESS_TOKEN,
+    CONF_DELIVERED_RETENTION_DAYS,
     CONF_PROVIDER,
     CONF_REFRESH_TOKEN,
     CONF_TOKEN_EXPIRES_AT,
+    DEFAULT_DELIVERED_RETENTION_DAYS,
     DEFAULT_PROVIDER,
     DOMAIN,
     PROVIDER_POSTEN,
@@ -21,6 +23,7 @@ from .const import (
 from .coordinator import ParcelUpdateCoordinator
 from .providers import Provider
 from .providers.posten import PostenAuth, PostenProvider
+from .providers.posten.const import PARCEL_LOOKBACK_DAYS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,7 +44,15 @@ def _build_provider(hass: HomeAssistant, entry: ConfigEntry) -> Provider:
             access_token=entry.data.get(CONF_ACCESS_TOKEN),
             expires_at=entry.data.get(CONF_TOKEN_EXPIRES_AT, 0.0),
         )
-        return PostenProvider(session, auth)
+        # Fetch a window wide enough to cover both active parcels and any
+        # delivered ones still within the user's retention setting.
+        retention = int(
+            entry.options.get(
+                CONF_DELIVERED_RETENTION_DAYS, DEFAULT_DELIVERED_RETENTION_DAYS
+            )
+        )
+        lookback_days = max(PARCEL_LOOKBACK_DAYS, retention + 7)
+        return PostenProvider(session, auth, lookback_days=lookback_days)
 
     raise ValueError(f"Unknown provider: {provider_id}")
 

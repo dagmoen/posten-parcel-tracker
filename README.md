@@ -162,17 +162,51 @@ content: |
 > [Mushroom](https://github.com/piitaya/lovelace-mushroom) cards (via HACS) pair
 > nicely with the per-package entities.
 
-To drill into one parcel, add an **Entities card** (each package entity opens a
-dialog showing all attributes), or a Markdown card for a specific parcel:
+### Parcel details
+
+Each incoming parcel is its own entity (named after the sender), so clicking it
+opens a dialog with every attribute. List them for one-click access with an
+**Entities card** — or, dynamically, with the
+[auto-entities](https://github.com/thomasloven/lovelace-auto-entities) card:
 
 ```yaml
-type: entities
-title: Parcels
-entities:
-  - entity: sensor.parcel_tracker_active_parcels
+type: custom:auto-entities
+card:
+  type: entities
+  title: Pakker
 filter:
   include:
-    - entity_id: sensor.parcel_tracker_*
+    - integration: parcel_tracker
+      attributes:
+        kollinummer: "*"
+```
+
+For a fully formatted detail view (full tracking history, weight, size,
+recipient) without any custom cards, use this **Markdown card**:
+
+```yaml
+type: markdown
+title: 📦 Pakkedetaljer
+content: |
+  {% set pkgs = state_attr('sensor.posten_bring_active_parcels','packages') or [] %}
+  {% set methods = {'home_delivery':'Hjemlevering','mailbox_delivery':'Postkasse','pib_delivery':'Hentested','parcel_locker_delivery':'Pakkeboks'} %}
+  {% set statuses = {'registered':'Registrert','in_transit':'Underveis','ready_for_pickup':'Klar for henting','delivered':'Levert','delayed':'Forsinket'} %}
+  {% if not pkgs %}_Ingen innkommende pakker._{% endif %}
+  {% for p in pkgs %}
+  ## 📦 {{ p.sender }} — {{ statuses.get(p.status, p.status) }}
+  **Levering:** {{ methods.get(p.delivery_type, p.delivery_method) }}{% if p.expected_delivery %} · {% if p.expected_delivery == now().strftime('%Y-%m-%d') %}I dag{% else %}{{ as_timestamp(p.expected_delivery)|timestamp_custom('%d.%m.%Y', true) }}{% endif %}{% if p.delivery_window_start %} kl. {{ as_timestamp(p.delivery_window_start)|timestamp_custom('%H:%M', true) }}–{{ as_timestamp(p.delivery_window_end)|timestamp_custom('%H:%M', true) }}{% endif %}{% endif %}<br>
+  **Kollinummer:** `{{ p.kollinummer }}`<br>
+  **Sendingsnummer:** `{{ p.sendingsnummer }}`<br>
+  **Mottaker:** {{ p.recipient }}{% if p.recipient_address %}, {{ p.recipient_address }}{% endif %}{% if p.recipient_city %} {{ p.recipient_city }}{% endif %}<br>
+  **Vekt:** {{ p.weight_kg or '—' }} kg · **Størrelse:** {{ p.dimensions or '—' }}
+
+  **Sporing:**
+  {% for e in p.tracking %}
+  - {{ as_timestamp(e.time)|timestamp_custom('%d.%m %H:%M', true) }} — {{ e.description }}{% if e.location %} ({{ e.location }}){% endif %}
+  {%- endfor %}
+
+  ---
+  {% endfor %}
 ```
 
 For an auto-updating per-parcel list you can also install the

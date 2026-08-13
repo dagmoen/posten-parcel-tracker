@@ -27,9 +27,15 @@ from .const import (
 class PostenClient:
     """Thin wrapper over the api.posten.no parcel endpoints."""
 
-    def __init__(self, session: aiohttp.ClientSession, auth: PostenAuth) -> None:
+    def __init__(
+        self,
+        session: aiohttp.ClientSession,
+        auth: PostenAuth,
+        lookback_days: int = PARCEL_LOOKBACK_DAYS,
+    ) -> None:
         self._session = session
         self._auth = auth
+        self._lookback_days = max(int(lookback_days), 1)
 
     async def async_get_parcels_raw(self) -> dict[str, list]:
         """Fetch the parcels updated within the lookback window.
@@ -50,7 +56,7 @@ class PostenClient:
             "Accept-Language": "nb-NO",
         }
         since = (
-            datetime.now(timezone.utc) - timedelta(days=PARCEL_LOOKBACK_DAYS)
+            datetime.now(timezone.utc) - timedelta(days=self._lookback_days)
         ).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         parcels: list = []

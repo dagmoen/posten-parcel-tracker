@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from custom_components.parcel_tracker.models import ParcelStatus
@@ -43,6 +45,18 @@ async def test_client_posts_bearer_and_returns_json() -> None:
     assert "lastUpdated" in session.last_json
     assert session.last_headers["Authorization"] == "Bearer valid-token"
     assert session.last_headers["Content-Type"] == "application/json"
+
+
+@pytest.mark.asyncio
+async def test_client_lookback_sets_last_updated() -> None:
+    session = FakeSession(fake_json_response({"parcels": []}))
+    client = PostenClient(session, _authed(session), lookback_days=100)
+    await client.async_get_parcels_raw()
+    since = datetime.strptime(
+        session.last_json["lastUpdated"], "%Y-%m-%dT%H:%M:%SZ"
+    ).replace(tzinfo=timezone.utc)
+    expected = datetime.now(timezone.utc) - timedelta(days=100)
+    assert abs((since - expected).total_seconds()) < 3600
 
 
 @pytest.mark.asyncio

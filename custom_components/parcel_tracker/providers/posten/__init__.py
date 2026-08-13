@@ -11,7 +11,7 @@ from ...models import Parcel
 from .. import Provider
 from .auth import PostenAuth
 from .client import PostenClient
-from .const import CARRIER_NAME
+from .const import CARRIER_NAME, PARCEL_LOOKBACK_DAYS
 from .parser import parse_parcels
 
 
@@ -21,9 +21,14 @@ class PostenProvider(Provider):
     provider_id = PROVIDER_POSTEN
     carrier_name = CARRIER_NAME
 
-    def __init__(self, session: aiohttp.ClientSession, auth: PostenAuth) -> None:
+    def __init__(
+        self,
+        session: aiohttp.ClientSession,
+        auth: PostenAuth,
+        lookback_days: int = PARCEL_LOOKBACK_DAYS,
+    ) -> None:
         self._auth = auth
-        self._client = PostenClient(session, auth)
+        self._client = PostenClient(session, auth, lookback_days)
 
     @property
     def auth(self) -> PostenAuth:
