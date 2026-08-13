@@ -39,9 +39,36 @@ async def test_client_posts_bearer_and_returns_json() -> None:
     assert session.last_url.endswith("/parcel-api/v1/parcel")
     # The list endpoint is a POST with a JSON body (a GET returns HTTP 500).
     assert session.last_method == "POST"
-    assert session.last_json == {}
+    assert session.last_json["exclude"] == []
+    assert "lastUpdated" in session.last_json
     assert session.last_headers["Authorization"] == "Bearer valid-token"
     assert session.last_headers["Content-Type"] == "application/json"
+
+
+@pytest.mark.asyncio
+async def test_client_paginates_via_exclude() -> None:
+    # Two pages: the first reports remainingCount > 0, the second clears it.
+    session = FakeSession(
+        [
+            fake_json_response(
+                {
+                    "parcels": [{"parcelNumber": "P1"}, {"parcelNumber": "P2"}],
+                    "totalCount": 3,
+                    "remainingCount": 1,
+                }
+            ),
+            fake_json_response(
+                {"parcels": [{"parcelNumber": "P3"}], "remainingCount": 0}
+            ),
+        ]
+    )
+    client = PostenClient(session, _authed(session))
+    data = await client.async_get_parcels_raw()
+    assert [p["parcelNumber"] for p in data["parcels"]] == ["P1", "P2", "P3"]
+    # Second request must exclude the parcels already fetched.
+    assert len(session.posts) == 2
+    assert session.posts[0]["exclude"] == []
+    assert session.posts[1]["exclude"] == ["P1", "P2"]
 
 
 @pytest.mark.asyncio

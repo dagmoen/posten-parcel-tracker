@@ -83,6 +83,26 @@ def _pickup_location(data: dict[str, Any]) -> str | None:
 
 
 def _expected_delivery(data: dict[str, Any]) -> date | None:
+    # Real Posten shape: delivery.deliveryTime.{deliveryWindow.start|date}.
+    # Prefer the delivery window's start (a daytime instant whose UTC date
+    # matches the local delivery day); the bare `date` is local midnight
+    # expressed in UTC and can land on the previous day if used directly.
+    delivery = data.get("delivery")
+    if isinstance(delivery, dict):
+        delivery_time = delivery.get("deliveryTime")
+        if isinstance(delivery_time, dict):
+            window = delivery_time.get("deliveryWindow")
+            if isinstance(window, dict):
+                parsed = _parse_date(window.get("start")) or _parse_date(
+                    window.get("end")
+                )
+                if parsed:
+                    return parsed
+            parsed = _parse_date(delivery_time.get("date"))
+            if parsed:
+                return parsed
+
+    # Legacy / alternate top-level keys, kept for tolerance.
     for key in (
         "estimatedDeliveryDate",
         "expectedDelivery",

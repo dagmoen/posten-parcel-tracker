@@ -16,6 +16,7 @@ from ...models import ParcelStatus
 _STATUS_MAP: dict[str, ParcelStatus] = {
     "PRE_NOTIFIED": ParcelStatus.REGISTERED,
     "PRENOTIFIED": ParcelStatus.REGISTERED,
+    "NOTIFIED": ParcelStatus.REGISTERED,
     "REGISTERED": ParcelStatus.REGISTERED,
     "CREATED": ParcelStatus.REGISTERED,
     "UNDERWAY": ParcelStatus.IN_TRANSIT,

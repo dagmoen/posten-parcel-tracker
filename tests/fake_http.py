@@ -42,15 +42,27 @@ class FakeResponse:
 
 
 class FakeSession:
-    """Captures the last request and returns a preset response."""
+    """Captures requests and returns preset response(s).
 
-    def __init__(self, response: FakeResponse) -> None:
-        self._response = response
+    Accepts a single :class:`FakeResponse` or a list of them; successive calls
+    return the next response, repeating the last once exhausted (handy for
+    testing pagination). All POST bodies are recorded in ``posts``.
+    """
+
+    def __init__(self, response: FakeResponse | list[FakeResponse]) -> None:
+        self._responses = response if isinstance(response, list) else [response]
+        self._calls = 0
         self.last_url: str = ""
         self.last_method: str = ""
         self.last_headers: dict[str, str] = {}
         self.last_data: dict[str, str] = {}
         self.last_json: Any = None
+        self.posts: list[Any] = []
+
+    def _next(self) -> FakeResponse:
+        response = self._responses[min(self._calls, len(self._responses) - 1)]
+        self._calls += 1
+        return response
 
     def post(
         self,
@@ -65,7 +77,8 @@ class FakeSession:
         self.last_data = data or {}
         self.last_json = json
         self.last_headers = headers or {}
-        return self._response
+        self.posts.append(json)
+        return self._next()
 
     def get(
         self, url: str, *, headers: dict[str, str] | None = None
@@ -73,7 +86,7 @@ class FakeSession:
         self.last_url = url
         self.last_method = "GET"
         self.last_headers = headers or {}
-        return self._response
+        return self._next()
 
 
 class TimeoutSession(FakeSession):

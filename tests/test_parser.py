@@ -129,6 +129,53 @@ def _real_response() -> dict:
     }
 
 
+def test_active_parcel_with_delivery_window() -> None:
+    # Mirrors a live "underway" home delivery: date lives under
+    # delivery.deliveryTime.deliveryWindow, and the parcel is active.
+    parcel = parse_parcel(
+        {
+            "parcelNumber": "FEDEX1",
+            "status": "underway",
+            "direction": "receive",
+            "sender": {"name": "Fedex Express Norge AS"},
+            "delivery": {
+                "type": "home_delivery",
+                "deliveryTime": {
+                    "date": "2026-08-12T22:00:00Z",
+                    "deliveryWindow": {
+                        "start": "2026-08-13T14:00:00Z",
+                        "end": "2026-08-13T20:00:00Z",
+                    },
+                },
+            },
+            "events": [{"description": "On its way", "date": "2026-08-13T10:07:26Z", "type": "underway"}],
+        }
+    )
+    assert parcel is not None
+    assert parcel.status is ParcelStatus.IN_TRANSIT
+    assert parcel.is_active
+    # Window start drives the expected delivery date (local day, not the UTC
+    # midnight-of-previous-day encoded in deliveryTime.date).
+    assert parcel.expected_delivery == date(2026, 8, 13)
+
+
+def test_notified_mailbox_parcel_is_active() -> None:
+    parcel = parse_parcel(
+        {
+            "parcelNumber": "HK1",
+            "status": "notified",
+            "direction": "receive",
+            "sender": {"name": "Helsekost.no"},
+            "delivery": {"type": "mailbox_delivery"},
+            "events": [{"description": "Notified", "date": "2026-08-13T09:04:21Z", "type": "notified"}],
+        }
+    )
+    assert parcel is not None
+    assert parcel.status is ParcelStatus.REGISTERED
+    assert parcel.is_active
+    assert parcel.expected_delivery is None  # mailbox delivery has no window
+
+
 def test_parse_real_response_shape() -> None:
     parcels = parse_parcels(_real_response())
     assert len(parcels) == 1

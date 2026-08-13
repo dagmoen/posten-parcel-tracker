@@ -30,6 +30,14 @@ API_BASE = "https://api.posten.no/"
 PARCEL_SERVICE = "parcel-api"
 PARCEL_LIST_PATH = "v1/parcel"
 
+# The parcel list is a POST that returns parcels updated after ``lastUpdated``,
+# in pages. The app uses this for incremental sync; we instead request a rolling
+# window (only active + recently-delivered parcels are relevant to Home
+# Assistant) and page through it via the ``exclude`` cursor. A large lookback
+# would drag in dozens of old archived parcels for no benefit.
+PARCEL_LOOKBACK_DAYS = 30
+PARCEL_MAX_PAGES = 50
+
 APP_VERSION = "8.3.2"
 USER_AGENT = f"posten/{APP_VERSION} Android/13"
 
