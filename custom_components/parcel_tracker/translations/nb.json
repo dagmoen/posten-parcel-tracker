@@ -17,7 +17,7 @@
       },
       "postnord": {
         "title": "Logg inn hos PostNord",
-        "description": "1. Åpne https://app.postnord.no i en nettleser og logg inn med Vipps.\n\n2. Åpne utviklerverktøy (F12) → **Nettverk**, last siden på nytt, klikk `shipments`-forespørselen, og under **Request headers** kopier hele verdien av `Cookie`-headeren.\n\n3. Lim den inn nedenfor. Du må gjenta dette hvis session-cookien utløper.",
+        "description": "1. Åpne {app_url} i en nettleser og logg inn med Vipps.\n\n2. Åpne utviklerverktøy (F12) → **Nettverk**, last siden på nytt, klikk `shipments`-forespørselen, og under **Request headers** kopier hele verdien av `Cookie`-headeren.\n\n3. Lim den inn nedenfor. Du må gjenta dette hvis session-cookien utløper.",
         "data": {
           "cookie": "Session-cookie"
         }

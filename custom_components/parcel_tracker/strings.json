@@ -17,7 +17,7 @@
       },
       "postnord": {
         "title": "Log in to PostNord",
-        "description": "1. Open https://app.postnord.no in a browser and log in with Vipps.\n\n2. Open developer tools (F12) → **Network**, reload the page, click the `shipments` request, and under **Request headers** copy the whole value of the `Cookie` header.\n\n3. Paste it below. You will need to repeat this if the session cookie expires.",
+        "description": "1. Open {app_url} in a browser and log in with Vipps.\n\n2. Open developer tools (F12) → **Network**, reload the page, click the `shipments` request, and under **Request headers** copy the whole value of the `Cookie` header.\n\n3. Paste it below. You will need to repeat this if the session cookie expires.",
         "data": {
           "cookie": "Session cookie"
         }

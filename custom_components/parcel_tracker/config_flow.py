@@ -119,6 +119,7 @@ class ParcelTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="postnord",
             data_schema=vol.Schema({vol.Required(CONF_COOKIE): str}),
             errors=errors,
+            description_placeholders={"app_url": "https://app.postnord.no"},
         )
 
     async def _finish(
