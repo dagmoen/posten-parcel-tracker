@@ -46,6 +46,8 @@ class PostenClient:
             "User-Agent": USER_AGENT,
             "Accept": "application/json",
             "Content-Type": "application/json",
+            # Ask Posten for Norwegian event descriptions / tracking text.
+            "Accept-Language": "nb-NO",
         }
         since = (
             datetime.now(timezone.utc) - timedelta(days=PARCEL_LOOKBACK_DAYS)

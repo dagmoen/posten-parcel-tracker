@@ -131,21 +131,36 @@ driven by the `packages` attribute:
 
 ```yaml
 type: markdown
-title: Incoming parcels
-content: >-
-  {% for p in state_attr('sensor.parcel_tracker_active_parcels', 'packages') %}
-  ### 📦 {{ p.sender }}
-  **Method:** {{ p.delivery_method }}{% if p.expected_delivery %} · **ETA:** {{
-  p.expected_delivery }}{% if p.delivery_window_start %} ({{
-  as_timestamp(p.delivery_window_start) | timestamp_custom('%H:%M') }}–{{
-  as_timestamp(p.delivery_window_end) | timestamp_custom('%H:%M') }}){% endif %}{%
-  endif %}
-  **Status:** {{ p.status_text or p.status }}
-  _{{ p.latest_event }}_
-  {% else %}
-  No incoming parcels right now.
+title: 📦 Innkommende pakker
+content: |
+  {% set pkgs = state_attr('sensor.posten_bring_active_parcels', 'packages') or [] %}
+  {% set methods = {'home_delivery':'Hjemlevering','mailbox_delivery':'Postkasse','pib_delivery':'Hentested','parcel_locker_delivery':'Pakkeboks','parcel_robot_delivery':'Leveringsrobot'} %}
+  {% set statuses = {'registered':'Registrert','in_transit':'Underveis','out_for_delivery':'Ut for levering','ready_for_pickup':'Klar for henting','delivered':'Levert','delayed':'Forsinket','returned':'Returnert','unknown':'Ukjent'} %}
+  {% set icons = {'in_transit':'🚚','out_for_delivery':'🚚','registered':'🕒','ready_for_pickup':'📍','delivered':'✅','delayed':'⚠️','returned':'↩️'} %}
+  {% if pkgs %}
+  | | Avsender | Levering | Forventet | Status |
+  |:-:|:--|:--|:--|:--|
+  {% for p in pkgs %}
+  {%- set eta = '—' -%}
+  {%- if p.expected_delivery -%}
+    {%- if p.expected_delivery == now().strftime('%Y-%m-%d') -%}{%- set day = 'I dag' -%}
+    {%- elif p.expected_delivery == (now()+timedelta(days=1)).strftime('%Y-%m-%d') -%}{%- set day = 'I morgen' -%}
+    {%- else -%}{%- set day = as_timestamp(p.expected_delivery)|timestamp_custom('%d.%m.%Y', true) -%}{%- endif -%}
+    {%- if p.delivery_window_start -%}{%- set eta = day ~ ' kl. ' ~ (as_timestamp(p.delivery_window_start)|timestamp_custom('%H:%M', true)) ~ '–' ~ (as_timestamp(p.delivery_window_end)|timestamp_custom('%H:%M', true)) -%}
+    {%- else -%}{%- set eta = day -%}{%- endif -%}
+  {%- endif -%}
+  | {{ icons.get(p.status,'📦') }} | **{{ p.sender }}** | {{ methods.get(p.delivery_type, p.delivery_method) }} | {{ eta }} | {{ statuses.get(p.status, p.status) }} |
   {% endfor %}
+  {% else %}
+  _Ingen innkommende pakker akkurat nå._
+  {% endif %}
 ```
+
+> The entity_id depends on your integration's title — commonly
+> `sensor.posten_bring_active_parcels`. Check **Developer Tools → States** and
+> adjust the card if needed. For a richer, colourful UI, the
+> [Mushroom](https://github.com/piitaya/lovelace-mushroom) cards (via HACS) pair
+> nicely with the per-package entities.
 
 To drill into one parcel, add an **Entities card** (each package entity opens a
 dialog showing all attributes), or a Markdown card for a specific parcel:
