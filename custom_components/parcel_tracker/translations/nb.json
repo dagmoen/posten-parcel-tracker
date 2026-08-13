@@ -10,7 +10,7 @@
       },
       "posten": {
         "title": "Logg inn hos Posten",
-        "description": "1. Åpne denne lenken i en nettleser og logg inn med Vipps eller telefonnummer:\n\n{authorize_url}\n\n2. Etter innlogging blir nettleseren omdirigert til en adresse som starter med `posten://login?code=...`. Siden kan feile å åpne — det er forventet.\n\n3. Kopier hele adressen (eller bare `code`-verdien) og lim den inn nedenfor.",
+        "description": "1. Åpne denne lenken i en nettleser og logg inn med Vipps eller telefonnummer:\n\n{authorize_url}\n\n2. Etter innlogging prøver nettleseren å åpne en `posten://login?code=...`-adresse. Den viser som regel en feil og vises **ikke** i adressefeltet. Åpne utviklerverktøy (**F12**) → **Nettverk**, finn `authorize`-forespørselen, og kopier `code`-verdien fra dens **Location**-svarheader. (Den kan også ligge i nettleserhistorikken.)\n\n3. Lim inn koden (eller hele `posten://login?code=...`-adressen) nedenfor.",
         "data": {
           "auth_code": "Autorisasjonskode eller omdirigerings-URL"
         }

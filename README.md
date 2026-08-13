@@ -80,13 +80,14 @@ Go to **Settings → Devices & Services → Add Integration**, choose
 
 1. The dialog shows a **login link**. Open it in a browser and log in with
    **Vipps** or your **phone number**.
-2. After login your browser is redirected to an address starting with
-   `posten://login?code=...`. This page will usually fail to open — **that is
-   expected**. Copy the whole address (or just the `code=` value) from the
-   address bar.
-3. Paste it back into Home Assistant. The integration exchanges it for tokens
-   and finishes setup. If the session later expires, Home Assistant prompts you
-   to re-authenticate the same way.
+2. After login the browser tries to open a `posten://login?code=...` address.
+   It usually shows an error and is **not visible in the address bar**. To grab
+   the code, open developer tools (**F12**) → **Network**, find the `authorize`
+   request, and copy the `code` value from its **Location** response header
+   (`posten://login?code=...`). It may also appear in your browser **history**.
+3. Paste that code (or the whole address) back into Home Assistant. The
+   integration exchanges it for tokens and finishes setup. If the session later
+   expires, Home Assistant prompts you to re-authenticate the same way.
 
 ### PostNord
 
@@ -155,14 +156,17 @@ driven by the `packages` attribute:
 type: markdown
 title: 📦 Innkommende pakker
 content: |
-  {% set pkgs = state_attr('sensor.posten_bring_active_parcels', 'packages') or [] %}
   {% set methods = {'home_delivery':'Hjemlevering','mailbox_delivery':'Postkasse','pib_delivery':'Hentested','parcel_locker_delivery':'Pakkeboks','parcel_robot_delivery':'Leveringsrobot'} %}
   {% set statuses = {'registered':'Registrert','in_transit':'Underveis','out_for_delivery':'Ut for levering','ready_for_pickup':'Klar for henting','delivered':'Levert','delayed':'Forsinket','returned':'Returnert','unknown':'Ukjent'} %}
-  {% set icons = {'in_transit':'🚚','out_for_delivery':'🚚','registered':'🕒','ready_for_pickup':'📍','delivered':'✅','delayed':'⚠️','returned':'↩️'} %}
-  {% if pkgs %}
+  {% set dots = {'Posten/Bring':'🔴','PostNord':'🔵'} %}
+  {% set ns = namespace(pkgs=[]) %}
+  {% for s in states.sensor if s.attributes.packages is defined %}
+  {%- set ns.pkgs = ns.pkgs + s.attributes.packages -%}
+  {% endfor %}
+  {% if ns.pkgs %}
   | | Avsender | Levering | Forventet | Status |
   |:-:|:--|:--|:--|:--|
-  {% for p in pkgs %}
+  {% for p in ns.pkgs %}
   {%- set eta = '—' -%}
   {%- if p.expected_delivery -%}
     {%- if p.expected_delivery == now().strftime('%Y-%m-%d') -%}{%- set day = 'I dag' -%}
@@ -171,16 +175,16 @@ content: |
     {%- if p.delivery_window_start -%}{%- set eta = day ~ ' kl. ' ~ (as_timestamp(p.delivery_window_start)|timestamp_custom('%H:%M', true)) ~ '–' ~ (as_timestamp(p.delivery_window_end)|timestamp_custom('%H:%M', true)) -%}
     {%- else -%}{%- set eta = day -%}{%- endif -%}
   {%- endif -%}
-  | {{ icons.get(p.status,'📦') }} | **{{ p.sender }}** | {{ methods.get(p.delivery_type, p.delivery_method) }} | {{ eta }} | {{ statuses.get(p.status, p.status) }} |
+  | {{ dots.get(p.carrier,'⚪') }} | **{{ p.sender }}** | {{ methods.get(p.delivery_type, p.delivery_method) }} | {{ eta }} | {{ statuses.get(p.status, p.status) }} |
   {% endfor %}
   {% else %}
   _Ingen innkommende pakker akkurat nå._
   {% endif %}
 ```
 
-> The entity_id depends on your integration's title — commonly
-> `sensor.posten_bring_active_parcels`. Check **Developer Tools → States** and
-> adjust the card if needed. For a richer, colourful UI, the
+> This card automatically merges every carrier you've added (Posten and
+> PostNord) by scanning all sensors that expose a `packages` attribute — no
+> entity_id to hard-code. For a richer, colourful UI, the
 > [Mushroom](https://github.com/piitaya/lovelace-mushroom) cards (via HACS) pair
 > nicely with the per-package entities.
 
@@ -210,12 +214,17 @@ recipient) without any custom cards, use this **Markdown card**:
 type: markdown
 title: 📦 Pakkedetaljer
 content: |
-  {% set pkgs = state_attr('sensor.posten_bring_active_parcels','packages') or [] %}
   {% set methods = {'home_delivery':'Hjemlevering','mailbox_delivery':'Postkasse','pib_delivery':'Hentested','parcel_locker_delivery':'Pakkeboks'} %}
   {% set statuses = {'registered':'Registrert','in_transit':'Underveis','ready_for_pickup':'Klar for henting','delivered':'Levert','delayed':'Forsinket'} %}
+  {% set dots = {'Posten/Bring':'🔴','PostNord':'🔵'} %}
+  {% set ns = namespace(pkgs=[]) %}
+  {% for s in states.sensor if s.attributes.packages is defined %}
+  {%- set ns.pkgs = ns.pkgs + s.attributes.packages -%}
+  {% endfor %}
+  {% set pkgs = ns.pkgs %}
   {% if not pkgs %}_Ingen innkommende pakker._{% endif %}
   {% for p in pkgs %}
-  ## 📦 {{ p.sender }} — {{ statuses.get(p.status, p.status) }}
+  ## {{ dots.get(p.carrier,'⚪') }} {{ p.sender }} — {{ statuses.get(p.status, p.status) }}
   **Levering:** {{ methods.get(p.delivery_type, p.delivery_method) }}{% if p.expected_delivery %} · {% if p.expected_delivery == now().strftime('%Y-%m-%d') %}I dag{% else %}{{ as_timestamp(p.expected_delivery)|timestamp_custom('%d.%m.%Y', true) }}{% endif %}{% if p.delivery_window_start %} kl. {{ as_timestamp(p.delivery_window_start)|timestamp_custom('%H:%M', true) }}–{{ as_timestamp(p.delivery_window_end)|timestamp_custom('%H:%M', true) }}{% endif %}{% endif %}<br>
   **Kollinummer:** `{{ p.kollinummer }}`<br>
   **Sendingsnummer:** `{{ p.sendingsnummer }}`<br>

@@ -10,7 +10,7 @@
       },
       "posten": {
         "title": "Log in to Posten",
-        "description": "1. Open this link in a browser and log in with Vipps or your phone number:\n\n{authorize_url}\n\n2. After logging in, your browser is redirected to an address starting with `posten://login?code=...`. The page may fail to open — that is expected.\n\n3. Copy that whole address (or just the `code` value) and paste it below.",
+        "description": "1. Open this link in a browser and log in with Vipps or your phone number:\n\n{authorize_url}\n\n2. After login the browser tries to open a `posten://login?code=...` address. It usually shows an error and is **not** visible in the address bar. Open developer tools (**F12**) → **Network**, find the `authorize` request, and copy the `code` value from its **Location** response header. (It may also appear in your browser history.)\n\n3. Paste that code (or the whole `posten://login?code=...` address) below.",
         "data": {
           "auth_code": "Authorization code or redirect URL"
         }
