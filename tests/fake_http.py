@@ -47,18 +47,23 @@ class FakeSession:
     def __init__(self, response: FakeResponse) -> None:
         self._response = response
         self.last_url: str = ""
+        self.last_method: str = ""
         self.last_headers: dict[str, str] = {}
         self.last_data: dict[str, str] = {}
+        self.last_json: Any = None
 
     def post(
         self,
         url: str,
         *,
         data: dict[str, str] | None = None,
+        json: Any = None,
         headers: dict[str, str] | None = None,
     ) -> FakeResponse:
         self.last_url = url
+        self.last_method = "POST"
         self.last_data = data or {}
+        self.last_json = json
         self.last_headers = headers or {}
         return self._response
 
@@ -66,6 +71,7 @@ class FakeSession:
         self, url: str, *, headers: dict[str, str] | None = None
     ) -> FakeResponse:
         self.last_url = url
+        self.last_method = "GET"
         self.last_headers = headers or {}
         return self._response
 

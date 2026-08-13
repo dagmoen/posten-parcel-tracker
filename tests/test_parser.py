@@ -94,6 +94,61 @@ def test_parse_parcels_handles_garbage() -> None:
     assert len(parcels) == 1
 
 
+def _real_response() -> dict:
+    """Shape mirrors the live POST /parcel-api/v1/parcel response (2026-08-13)."""
+    return {
+        "parcels": [
+            {
+                "parcelNumber": "370722152135687874",
+                "consignmentNumber": "70722152135231588",
+                "status": "archived",
+                "direction": "receive",
+                "sender": {"name": "Dun of Norway AS"},
+                "productName": "new_norway_bring_pickup_parcel",
+                "delivery": {
+                    "pickUpPointId": "121573",
+                    "shelfNumber": "W5",
+                    "type": "pib_delivery",
+                },
+                "events": [
+                    {
+                        "description": "The parcel has been delivered.",
+                        "date": "2025-09-18T11:35:49Z",
+                        "type": "delivered",
+                        "displayStatus": "significant",
+                    },
+                    {
+                        "description": "The parcel has arrived at Matkroken Ljabru.",
+                        "date": "2025-09-18T09:51:26Z",
+                        "type": "ready_for_pick_up",
+                        "displayStatus": "significant",
+                    },
+                ],
+            }
+        ]
+    }
+
+
+def test_parse_real_response_shape() -> None:
+    parcels = parse_parcels(_real_response())
+    assert len(parcels) == 1
+    parcel = parcels[0]
+    assert parcel.parcel_id == "370722152135687874"
+    assert parcel.tracking_number == "370722152135687874"
+    # Lowercase "archived" normalizes to DELIVERED.
+    assert parcel.status is ParcelStatus.DELIVERED
+    assert parcel.raw_status == "archived"
+    assert parcel.sender == "Dun of Norway AS"
+    assert parcel.carrier == "Posten/Bring"
+    assert parcel.direction == "receive"
+    # Event "type" drives per-event status; latest (delivered) wins.
+    event_statuses = {e.status for e in parcel.events}
+    assert ParcelStatus.DELIVERED in event_statuses
+    assert ParcelStatus.READY_FOR_PICKUP in event_statuses
+    assert parcel.latest_event is not None
+    assert parcel.latest_event.status is ParcelStatus.DELIVERED
+
+
 def test_alternate_field_names() -> None:
     parcel = parse_parcel(
         {

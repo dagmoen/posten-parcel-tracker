@@ -31,14 +31,7 @@ PARCEL_SERVICE = "parcel-api"
 PARCEL_LIST_PATH = "v1/parcel"
 
 APP_VERSION = "8.3.2"
-ANDROID_VERSION = "13"
-USER_AGENT = f"posten/{APP_VERSION} Android/{ANDROID_VERSION}"
-
-# The official app attaches these identifying headers (via an OkHttp interceptor)
-# to every api.posten.no request. The backend expects them and returns HTTP 500
-# when they are missing, so we reproduce them here.
-ACCEPT_LANGUAGE = "nb-NO,nb;q=0.9,no;q=0.8,en;q=0.7"
-PLATFORM = "android"
+USER_AGENT = f"posten/{APP_VERSION} Android/13"
 
 # Public tracking deep-link (used to build a tracking_url attribute).
 TRACKING_URL_TEMPLATE = "https://sporing.posten.no/sporing/{parcel_id}"

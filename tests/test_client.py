@@ -31,17 +31,17 @@ def _authed(session: FakeSession) -> PostenAuth:
 
 
 @pytest.mark.asyncio
-async def test_client_sends_bearer_and_returns_json() -> None:
+async def test_client_posts_bearer_and_returns_json() -> None:
     session = FakeSession(fake_json_response({"parcels": []}))
     client = PostenClient(session, _authed(session))
     data = await client.async_get_parcels_raw()
     assert data == {"parcels": []}
     assert session.last_url.endswith("/parcel-api/v1/parcel")
+    # The list endpoint is a POST with a JSON body (a GET returns HTTP 500).
+    assert session.last_method == "POST"
+    assert session.last_json == {}
     assert session.last_headers["Authorization"] == "Bearer valid-token"
-    # App-identifying headers the backend requires (missing -> HTTP 500).
-    assert session.last_headers["X-Native-App"] == "true"
-    assert session.last_headers["App-Version"] == "8.3.2"
-    assert session.last_headers["Platform"] == "android"
+    assert session.last_headers["Content-Type"] == "application/json"
 
 
 @pytest.mark.asyncio

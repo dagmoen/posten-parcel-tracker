@@ -12,13 +12,9 @@ from .. import (
 )
 from .auth import PostenAuth
 from .const import (
-    ACCEPT_LANGUAGE,
-    ANDROID_VERSION,
     API_BASE,
-    APP_VERSION,
     PARCEL_LIST_PATH,
     PARCEL_SERVICE,
-    PLATFORM,
     REQUEST_TIMEOUT,
     USER_AGENT,
 )
@@ -32,23 +28,23 @@ class PostenClient:
         self._auth = auth
 
     async def async_get_parcels_raw(self) -> object:
-        """Fetch the raw parcel-list JSON for the authenticated account."""
+        """Fetch the raw parcel-list JSON for the authenticated account.
+
+        The parcel-list endpoint is a POST (a GET returns HTTP 500). The JSON
+        body is a ``ParcelsRequest`` used by the app for delta sync; sending an
+        empty body returns all parcels on the account, which is what we want.
+        """
         access_token = await self._auth.async_valid_access_token()
         url = f"{API_BASE}{PARCEL_SERVICE}/{PARCEL_LIST_PATH}"
         headers = {
             "Authorization": f"Bearer {access_token}",
             "User-Agent": USER_AGENT,
             "Accept": "application/json",
-            "Accept-Language": ACCEPT_LANGUAGE,
-            # App-identifying headers the backend requires (see const.py).
-            "X-Native-App": "true",
-            "App-Version": APP_VERSION,
-            "Platform": PLATFORM,
-            "OS-Version": ANDROID_VERSION,
+            "Content-Type": "application/json",
         }
         try:
             async with async_timeout.timeout(REQUEST_TIMEOUT):
-                async with self._session.get(url, headers=headers) as resp:
+                async with self._session.post(url, headers=headers, json={}) as resp:
                     if resp.status in (401, 403):
                         raise AuthenticationError(
                             f"Parcel request unauthorized (HTTP {resp.status})"
