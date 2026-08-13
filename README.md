@@ -1,25 +1,29 @@
-# Parcel Tracker for Home Assistant (Posten/Bring)
+# Parcel Tracker for Home Assistant (Posten/Bring & PostNord)
 
 A Home Assistant custom integration that tracks the parcels on your personal
-**Posten / Bring Norway** account and exposes them as sensors — number of active
-parcels, what's arriving today, what's ready for pickup, and your next expected
-delivery.
+Norwegian carrier account and exposes them as sensors — number of active
+parcels, what's arriving today, and your next expected delivery. Two carriers
+are supported today: **Posten / Bring** and **PostNord**. You can add one or
+both.
 
-The integration is built around a **provider abstraction** so additional
-carriers can be added later without touching the Home Assistant platform code.
+The integration is built around a **provider abstraction**, so each carrier is
+an isolated provider and more can be added without touching the Home Assistant
+platform code.
 
-> ⚠️ **Important — unofficial API.** Posten does not offer a public API for
-> retrieving all parcels on a personal account. This integration talks to the
-> same private backend (`api.posten.no` / `id.posten.no`) that the official
-> Posten mobile app uses. That means:
+> ⚠️ **Important — unofficial APIs.** Neither carrier offers a public API for
+> listing all parcels on a personal account, so this integration talks to the
+> same private backends their own apps use:
 >
-> - It can **break at any time** if Posten changes their app or backend.
-> - It authenticates using the **Posten app's own OAuth client credentials**.
-> - It is **not endorsed by or affiliated with Posten/Bring**. Use at your own
->   risk and review Posten's terms of service.
+> - **Posten/Bring** — the app backend (`api.posten.no` / `id.posten.no`),
+>   authenticated with the Posten app's OAuth client via Vipps/phone login.
+> - **PostNord** — the web app backend (`app.postnord.no`), authenticated with
+>   your web **session cookie** after a Vipps login.
 >
-> If you only want to track parcels by a **known tracking number** and prefer an
-> officially documented API, see "Alternatives" at the bottom.
+> These can **break at any time** if the carriers change their apps/backends,
+> and the integration is **not endorsed by or affiliated with** Posten/Bring or
+> PostNord. Use at your own risk and review each carrier's terms of service. If
+> you only want to track a **known tracking number** via a documented API, see
+> "Alternatives" at the bottom.
 
 ---
 
@@ -68,19 +72,37 @@ as `raw_status`:
 
 ## Setup
 
-1. Go to **Settings → Devices & Services → Add Integration** and choose
-   **Parcel Tracker**.
-2. The dialog shows a **login link**. Open it in a browser and log in with
+Go to **Settings → Devices & Services → Add Integration**, choose
+**Parcel Tracker**, then pick the carrier you want to add (**Posten / Bring** or
+**PostNord**). Add the integration again to set up the second carrier.
+
+### Posten / Bring
+
+1. The dialog shows a **login link**. Open it in a browser and log in with
    **Vipps** or your **phone number**.
-3. After login your browser is redirected to an address starting with
+2. After login your browser is redirected to an address starting with
    `posten://login?code=...`. This page will usually fail to open — **that is
    expected**. Copy the whole address (or just the `code=` value) from the
    address bar.
-4. Paste it back into Home Assistant. The integration exchanges it for tokens
-   and finishes setup.
+3. Paste it back into Home Assistant. The integration exchanges it for tokens
+   and finishes setup. If the session later expires, Home Assistant prompts you
+   to re-authenticate the same way.
 
-If the session later expires, Home Assistant will prompt you to re-authenticate
-with the same steps.
+### PostNord
+
+PostNord's web app authenticates with a **session cookie**, so setup is a
+copy-paste of that cookie:
+
+1. Open <https://app.postnord.no> in a browser and log in with **Vipps**.
+2. Open developer tools (**F12**) → **Network**, reload the page, click the
+   `shipments` request, and under **Request headers** copy the entire value of
+   the **`Cookie`** header.
+3. Paste it into the PostNord setup dialog.
+
+The cookie is stored in Home Assistant and sent with each request. When it
+expires, Home Assistant prompts you to paste a fresh one (there is no automatic
+token refresh like Posten). Your Vipps credentials are never seen by the
+integration.
 
 ### Posten/Bring authentication requirements
 

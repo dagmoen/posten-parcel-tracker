@@ -11,6 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_ACCESS_TOKEN,
+    CONF_COOKIE,
     CONF_DELIVERED_RETENTION_DAYS,
     CONF_PROVIDER,
     CONF_REFRESH_TOKEN,
@@ -19,11 +20,13 @@ from .const import (
     DEFAULT_PROVIDER,
     DOMAIN,
     PROVIDER_POSTEN,
+    PROVIDER_POSTNORD,
 )
 from .coordinator import ParcelUpdateCoordinator
 from .providers import Provider
 from .providers.posten import PostenAuth, PostenProvider
 from .providers.posten.const import PARCEL_LOOKBACK_DAYS
+from .providers.postnord import PostNordProvider
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,6 +56,9 @@ def _build_provider(hass: HomeAssistant, entry: ConfigEntry) -> Provider:
         )
         lookback_days = max(PARCEL_LOOKBACK_DAYS, retention + 7)
         return PostenProvider(session, auth, lookback_days=lookback_days)
+
+    if provider_id == PROVIDER_POSTNORD:
+        return PostNordProvider(session, entry.data.get(CONF_COOKIE, ""))
 
     raise ValueError(f"Unknown provider: {provider_id}")
 

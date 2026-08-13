@@ -11,6 +11,7 @@ CONF_PROVIDER = "provider"
 CONF_REFRESH_TOKEN = "refresh_token"
 CONF_ACCESS_TOKEN = "access_token"
 CONF_TOKEN_EXPIRES_AT = "token_expires_at"
+CONF_COOKIE = "cookie"
 
 # Options keys
 CONF_SCAN_INTERVAL_MINUTES = "scan_interval_minutes"
@@ -29,6 +30,7 @@ DEFAULT_SCAN_INTERVAL = timedelta(minutes=DEFAULT_SCAN_INTERVAL_MINUTES)
 
 # Providers
 PROVIDER_POSTEN = "posten"
+PROVIDER_POSTNORD = "postnord"
 DEFAULT_PROVIDER = PROVIDER_POSTEN
 
 # Events

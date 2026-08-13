@@ -18,6 +18,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_ACCESS_TOKEN,
+    CONF_COOKIE,
     CONF_DELIVERED_RETENTION_DAYS,
     CONF_ENABLE_PACKAGE_ENTITIES,
     CONF_PROVIDER,
@@ -32,28 +33,41 @@ from .const import (
     DOMAIN,
     MIN_SCAN_INTERVAL_MINUTES,
     PROVIDER_POSTEN,
+    PROVIDER_POSTNORD,
 )
 from .providers import AuthenticationError, ProviderError
 from .providers.posten.auth import PostenAuth, build_authorize_url, extract_code
+from .providers.postnord import PostNordProvider
 
 CONF_AUTH_CODE = "auth_code"
 
 
 class ParcelTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Handle the Posten OAuth login as a config flow."""
+    """Handle login for each supported provider."""
 
     VERSION = 1
 
     def __init__(self) -> None:
         self._state = uuid.uuid4().hex
-        self._authorize_url = build_authorize_url(self._state)
+        self._authorize_url: str | None = None
         self._reauth_entry: ConfigEntry | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Show the login URL and capture the pasted authorization code."""
+        """Let the user pick which carrier to add."""
+        return self.async_show_menu(
+            step_id="user",
+            menu_options=[PROVIDER_POSTEN, PROVIDER_POSTNORD],
+        )
+
+    async def async_step_posten(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Posten OAuth login: show the URL and capture the pasted code."""
         errors: dict[str, str] = {}
+        if self._authorize_url is None:
+            self._authorize_url = build_authorize_url(self._state)
 
         if user_input is not None:
             try:
@@ -72,29 +86,62 @@ class ParcelTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_ACCESS_TOKEN: token.access_token,
                     CONF_TOKEN_EXPIRES_AT: token.expires_at,
                 }
-                if self._reauth_entry is not None:
-                    return self.async_update_reload_and_abort(
-                        self._reauth_entry, data=data
-                    )
-                await self.async_set_unique_id(PROVIDER_POSTEN)
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(title="Parcel Tracker", data=data)
+                return await self._finish(PROVIDER_POSTEN, "Parcel Tracker", data)
 
         return self.async_show_form(
-            step_id="user",
+            step_id="posten",
             data_schema=vol.Schema({vol.Required(CONF_AUTH_CODE): str}),
             errors=errors,
             description_placeholders={"authorize_url": self._authorize_url},
         )
 
+    async def async_step_postnord(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """PostNord login: capture the pasted web session cookie."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            cookie = user_input[CONF_COOKIE].strip()
+            session = async_get_clientsession(self.hass)
+            provider = PostNordProvider(session, cookie)
+            try:
+                await provider.async_get_parcels()
+            except AuthenticationError:
+                errors["base"] = "invalid_auth"
+            except ProviderError:
+                errors["base"] = "cannot_connect"
+            else:
+                data = {CONF_PROVIDER: PROVIDER_POSTNORD, CONF_COOKIE: cookie}
+                return await self._finish(PROVIDER_POSTNORD, "Parcel Tracker", data)
+
+        return self.async_show_form(
+            step_id="postnord",
+            data_schema=vol.Schema({vol.Required(CONF_COOKIE): str}),
+            errors=errors,
+        )
+
+    async def _finish(
+        self, provider_id: str, title: str, data: dict[str, Any]
+    ) -> ConfigFlowResult:
+        """Create the entry, or update it when re-authenticating."""
+        if self._reauth_entry is not None:
+            return self.async_update_reload_and_abort(self._reauth_entry, data=data)
+        await self.async_set_unique_id(provider_id)
+        self._abort_if_unique_id_configured()
+        return self.async_create_entry(title=title, data=data)
+
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]
     ) -> ConfigFlowResult:
-        """Handle re-authentication when the token becomes invalid."""
+        """Route re-authentication to the right provider step."""
         self._reauth_entry = self.hass.config_entries.async_get_entry(
             self.context["entry_id"]
         )
-        return await self.async_step_user()
+        provider_id = entry_data.get(CONF_PROVIDER, PROVIDER_POSTEN)
+        if provider_id == PROVIDER_POSTNORD:
+            return await self.async_step_postnord()
+        return await self.async_step_posten()
 
     @staticmethod
     @callback

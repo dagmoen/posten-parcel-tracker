@@ -81,7 +81,11 @@ class FakeSession:
         return self._next()
 
     def get(
-        self, url: str, *, headers: dict[str, str] | None = None
+        self,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        allow_redirects: bool = True,
     ) -> FakeResponse:
         self.last_url = url
         self.last_method = "GET"

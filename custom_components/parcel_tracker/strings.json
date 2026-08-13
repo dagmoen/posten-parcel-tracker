@@ -2,19 +2,33 @@
   "config": {
     "step": {
       "user": {
+        "title": "Add a parcel carrier",
+        "menu_options": {
+          "posten": "Posten / Bring",
+          "postnord": "PostNord"
+        }
+      },
+      "posten": {
         "title": "Log in to Posten",
         "description": "1. Open this link in a browser and log in with Vipps or your phone number:\n\n{authorize_url}\n\n2. After logging in, your browser is redirected to an address starting with `posten://login?code=...`. The page may fail to open — that is expected.\n\n3. Copy that whole address (or just the `code` value) and paste it below.",
         "data": {
           "auth_code": "Authorization code or redirect URL"
         }
+      },
+      "postnord": {
+        "title": "Log in to PostNord",
+        "description": "1. Open https://app.postnord.no in a browser and log in with Vipps.\n\n2. Open developer tools (F12) → **Network**, reload the page, click the `shipments` request, and under **Request headers** copy the whole value of the `Cookie` header.\n\n3. Paste it below. You will need to repeat this if the session cookie expires.",
+        "data": {
+          "cookie": "Session cookie"
+        }
       }
     },
     "error": {
-      "invalid_auth": "The authorization code was rejected. Please try logging in again.",
-      "cannot_connect": "Could not reach Posten. Check your connection and try again."
+      "invalid_auth": "Login was rejected. Please try again with a fresh code/cookie.",
+      "cannot_connect": "Could not reach the carrier. Check your connection and try again."
     },
     "abort": {
-      "already_configured": "This Posten account is already set up.",
+      "already_configured": "This carrier account is already set up.",
       "reauth_successful": "Re-authentication was successful."
     }
   },
