@@ -41,11 +41,26 @@ def _build_provider(hass: HomeAssistant, entry: ConfigEntry) -> Provider:
     session = async_get_clientsession(hass)
 
     if provider_id == PROVIDER_POSTEN:
+
+        def _save_token(token: object) -> None:
+            # Persist the rotated refresh token so a restart doesn't reuse a
+            # stale one (which Posten may have already invalidated -> re-auth).
+            hass.config_entries.async_update_entry(
+                entry,
+                data={
+                    **entry.data,
+                    CONF_REFRESH_TOKEN: token.refresh_token,
+                    CONF_ACCESS_TOKEN: token.access_token,
+                    CONF_TOKEN_EXPIRES_AT: token.expires_at,
+                },
+            )
+
         auth = PostenAuth(
             session,
             refresh_token=entry.data.get(CONF_REFRESH_TOKEN),
             access_token=entry.data.get(CONF_ACCESS_TOKEN),
             expires_at=entry.data.get(CONF_TOKEN_EXPIRES_AT, 0.0),
+            on_token_update=_save_token,
         )
         # Fetch a window wide enough to cover both active parcels and any
         # delivered ones still within the user's retention setting.
@@ -88,5 +103,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ParcelConfigEntry) -> b
 async def _async_update_listener(
     hass: HomeAssistant, entry: ParcelConfigEntry
 ) -> None:
-    """Reload the entry when options change."""
-    await hass.config_entries.async_reload(entry.entry_id)
+    """Reload the entry only when options change.
+
+    Token refreshes update ``entry.data`` (to persist the rotated refresh
+    token); those must NOT trigger a reload, or every refresh would restart the
+    integration.
+    """
+    coordinator = entry.runtime_data
+    if dict(entry.options) != coordinator.current_options:
+        await hass.config_entries.async_reload(entry.entry_id)

@@ -92,6 +92,25 @@ async def test_refresh_uses_refresh_grant() -> None:
 
 
 @pytest.mark.asyncio
+async def test_refresh_fires_token_update_callback() -> None:
+    # The rotated refresh token must be handed to the callback so it can be
+    # persisted (otherwise a restart reuses a stale token and forces re-auth).
+    session = FakeSession(
+        fake_json_response(
+            {"access_token": "new", "refresh_token": "rotated", "expires_in": 100}
+        )
+    )
+    saved: list = []
+    auth = PostenAuth(
+        session, refresh_token="old", on_token_update=saved.append
+    )
+    await auth.async_refresh()
+    assert len(saved) == 1
+    assert saved[0].refresh_token == "rotated"
+    assert saved[0].access_token == "new"
+
+
+@pytest.mark.asyncio
 async def test_exchange_code_auth_failure() -> None:
     session = FakeSession(fake_status_response(400))
     auth = PostenAuth(session)

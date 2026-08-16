@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import base64
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -104,8 +105,12 @@ class PostenAuth:
         refresh_token: str | None = None,
         access_token: str | None = None,
         expires_at: float = 0.0,
+        on_token_update: Callable[[Token], None] | None = None,
     ) -> None:
         self._session = session
+        # Called whenever a new token pair is obtained, so callers can persist
+        # the rotated refresh token (Posten issues a new one on every refresh).
+        self._on_token_update = on_token_update
         self._token: Token | None = None
         if refresh_token:
             self._token = Token(
@@ -174,7 +179,10 @@ class PostenAuth:
         except aiohttp.ClientError as err:
             raise ProviderConnectionError(str(err)) from err
 
-        return self._parse_token(payload)
+        token = self._parse_token(payload)
+        if self._on_token_update is not None:
+            self._on_token_update(token)
+        return token
 
     @staticmethod
     def _parse_token(payload: dict) -> Token:

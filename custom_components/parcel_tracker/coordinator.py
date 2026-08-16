@@ -74,6 +74,9 @@ class ParcelUpdateCoordinator(DataUpdateCoordinator[ParcelData]):
     ) -> None:
         self.entry = entry
         self.provider = provider
+        # Snapshot of options so the update listener can tell an options change
+        # (needs a reload) from a token-data update (must not reload).
+        self.current_options = dict(entry.options)
         # Snapshot of last-seen status per parcel id, for event firing.
         self._last_status: dict[str, ParcelStatus] = {}
         self._known_ids: set[str] = set()
