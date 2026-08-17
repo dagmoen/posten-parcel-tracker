@@ -19,11 +19,13 @@ from .const import (
     DEFAULT_DELIVERED_RETENTION_DAYS,
     DEFAULT_PROVIDER,
     DOMAIN,
+    PROVIDER_HELTHJEM,
     PROVIDER_POSTEN,
     PROVIDER_POSTNORD,
 )
 from .coordinator import ParcelUpdateCoordinator
 from .providers import Provider
+from .providers.helthjem import HelthjemProvider
 from .providers.posten import PostenAuth, PostenProvider
 from .providers.posten.const import PARCEL_LOOKBACK_DAYS
 from .providers.postnord import PostNordProvider
@@ -74,6 +76,9 @@ def _build_provider(hass: HomeAssistant, entry: ConfigEntry) -> Provider:
 
     if provider_id == PROVIDER_POSTNORD:
         return PostNordProvider(session, entry.data.get(CONF_COOKIE, ""))
+
+    if provider_id == PROVIDER_HELTHJEM:
+        return HelthjemProvider(session, entry.data.get(CONF_COOKIE, ""))
 
     raise ValueError(f"Unknown provider: {provider_id}")
 

@@ -32,10 +32,12 @@ from .const import (
     DEFAULT_SHOW_DELIVERED,
     DOMAIN,
     MIN_SCAN_INTERVAL_MINUTES,
+    PROVIDER_HELTHJEM,
     PROVIDER_POSTEN,
     PROVIDER_POSTNORD,
 )
 from .providers import AuthenticationError, ProviderError
+from .providers.helthjem import HelthjemProvider
 from .providers.posten.auth import PostenAuth, build_authorize_url, extract_code
 from .providers.postnord import PostNordProvider
 
@@ -58,7 +60,7 @@ class ParcelTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
         """Let the user pick which carrier to add."""
         return self.async_show_menu(
             step_id="user",
-            menu_options=[PROVIDER_POSTEN, PROVIDER_POSTNORD],
+            menu_options=[PROVIDER_POSTEN, PROVIDER_POSTNORD, PROVIDER_HELTHJEM],
         )
 
     async def async_step_posten(
@@ -122,6 +124,33 @@ class ParcelTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={"app_url": "https://app.postnord.no"},
         )
 
+    async def async_step_helthjem(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Helthjem login: capture the pasted web session cookie."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            cookie = user_input[CONF_COOKIE].strip()
+            session = async_get_clientsession(self.hass)
+            provider = HelthjemProvider(session, cookie)
+            try:
+                await provider.async_get_parcels()
+            except AuthenticationError:
+                errors["base"] = "invalid_auth"
+            except ProviderError:
+                errors["base"] = "cannot_connect"
+            else:
+                data = {CONF_PROVIDER: PROVIDER_HELTHJEM, CONF_COOKIE: cookie}
+                return await self._finish(PROVIDER_HELTHJEM, "Parcel Tracker", data)
+
+        return self.async_show_form(
+            step_id="helthjem",
+            data_schema=vol.Schema({vol.Required(CONF_COOKIE): str}),
+            errors=errors,
+            description_placeholders={"app_url": "https://helthjem.no/minside"},
+        )
+
     async def _finish(
         self, provider_id: str, title: str, data: dict[str, Any]
     ) -> ConfigFlowResult:
@@ -142,6 +171,8 @@ class ParcelTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
         provider_id = entry_data.get(CONF_PROVIDER, PROVIDER_POSTEN)
         if provider_id == PROVIDER_POSTNORD:
             return await self.async_step_postnord()
+        if provider_id == PROVIDER_HELTHJEM:
+            return await self.async_step_helthjem()
         return await self.async_step_posten()
 
     @staticmethod

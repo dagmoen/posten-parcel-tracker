@@ -5,7 +5,8 @@
         "title": "Add a parcel carrier",
         "menu_options": {
           "posten": "Posten / Bring",
-          "postnord": "PostNord"
+          "postnord": "PostNord",
+          "helthjem": "Helthjem"
         }
       },
       "posten": {
@@ -18,6 +19,13 @@
       "postnord": {
         "title": "Log in to PostNord",
         "description": "1. Open {app_url} in a browser and log in with Vipps.\n\n2. Open developer tools (F12) → **Network**, reload the page, click the `shipments` request, and under **Request headers** copy the whole value of the `Cookie` header.\n\n3. Paste it below. You will need to repeat this if the session cookie expires.",
+        "data": {
+          "cookie": "Session cookie"
+        }
+      },
+      "helthjem": {
+        "title": "Log in to Helthjem",
+        "description": "1. Open {app_url} in a browser and log in.\n\n2. Open developer tools (F12) → **Network**, reload the page, click a `graphql` request, and under **Request headers** copy the whole value of the `Cookie` header (it must include `session_token`).\n\n3. Paste it below. The Helthjem session cookie is long-lived, so this rarely needs repeating.",
         "data": {
           "cookie": "Session cookie"
         }

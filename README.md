@@ -2,9 +2,9 @@
 
 A Home Assistant custom integration that tracks the parcels on your personal
 Norwegian carrier account and exposes them as sensors — number of active
-parcels, what's arriving today, and your next expected delivery. Two carriers
-are supported today: **Posten / Bring** and **PostNord**. You can add one or
-both.
+parcels, what's arriving today, and your next expected delivery. Three carriers
+are supported today: **Posten / Bring**, **PostNord**, and **Helthjem**. You can
+add any combination.
 
 The integration is built around a **provider abstraction**, so each carrier is
 an isolated provider and more can be added without touching the Home Assistant
@@ -18,6 +18,8 @@ platform code.
 >   authenticated with the Posten app's OAuth client via Vipps/phone login.
 > - **PostNord** — the web app backend (`app.postnord.no`), authenticated with
 >   your web **session cookie** after a Vipps login.
+> - **Helthjem** — the web app's GraphQL backend (`services.helthjem.no`),
+>   authenticated with your web **session cookie** (`session_token`).
 >
 > These can **break at any time** if the carriers change their apps/backends,
 > and the integration is **not endorsed by or affiliated with** Posten/Bring or
@@ -104,6 +106,21 @@ The cookie is stored in Home Assistant and sent with each request. When it
 expires, Home Assistant prompts you to paste a fresh one (there is no automatic
 token refresh like Posten). Your Vipps credentials are never seen by the
 integration.
+
+### Helthjem
+
+Helthjem's web app uses a GraphQL backend authenticated with a **session cookie**
+(`session_token`), which is long-lived — so this rarely needs re-doing.
+
+1. Open <https://helthjem.no/minside> in a browser and log in.
+2. Open developer tools (**F12**) → **Network**, reload the page, click a
+   `graphql` request, and under **Request headers** copy the whole value of the
+   **`Cookie`** header (it must include `session_token`).
+3. Paste it into the Helthjem setup dialog.
+
+Note: Helthjem's data is a little thinner than the other carriers — no delivery
+method, weight or size, and tracking events are status-only (no free-text
+descriptions), so the timeline shows status + location + time.
 
 ### Posten/Bring authentication requirements
 

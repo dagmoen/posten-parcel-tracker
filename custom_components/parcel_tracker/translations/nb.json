@@ -5,7 +5,8 @@
         "title": "Legg til en transportør",
         "menu_options": {
           "posten": "Posten / Bring",
-          "postnord": "PostNord"
+          "postnord": "PostNord",
+          "helthjem": "Helthjem"
         }
       },
       "posten": {
@@ -18,6 +19,13 @@
       "postnord": {
         "title": "Logg inn hos PostNord",
         "description": "1. Åpne {app_url} i en nettleser og logg inn med Vipps.\n\n2. Åpne utviklerverktøy (F12) → **Nettverk**, last siden på nytt, klikk `shipments`-forespørselen, og under **Request headers** kopier hele verdien av `Cookie`-headeren.\n\n3. Lim den inn nedenfor. Du må gjenta dette hvis session-cookien utløper.",
+        "data": {
+          "cookie": "Session-cookie"
+        }
+      },
+      "helthjem": {
+        "title": "Logg inn hos Helthjem",
+        "description": "1. Åpne {app_url} i en nettleser og logg inn.\n\n2. Åpne utviklerverktøy (F12) → **Nettverk**, last siden på nytt, klikk en `graphql`-forespørsel, og under **Request headers** kopier hele verdien av `Cookie`-headeren (den må inneholde `session_token`).\n\n3. Lim den inn nedenfor. Helthjem-cookien er langlevd, så dette trengs sjelden på nytt.",
         "data": {
           "cookie": "Session-cookie"
         }
