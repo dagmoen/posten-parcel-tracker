@@ -50,6 +50,10 @@ def test_parcel_to_dict_exposes_all_detail_fields() -> None:
     assert data["recipient"] == "DAG MOEN"
     assert data["delivery_method"] == "Home delivery"
     assert data["delivery_type"] == "home_delivery"
+    # Ready-to-display Norwegian labels for dashboards.
+    assert data["status_label"] == "Underveis"
+    assert data["delivery_label"] == "Hjemlevering"
+    assert data["carrier_dot"] == "🔴"
     assert data["expected_delivery"] == "2026-08-13"
     assert data["delivery_window_start"] == "2026-08-13T14:00:00+00:00"
     assert data["on_track"] is True

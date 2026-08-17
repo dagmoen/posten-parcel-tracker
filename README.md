@@ -173,9 +173,6 @@ driven by the `packages` attribute:
 type: markdown
 title: 📦 Innkommende pakker
 content: |
-  {% set methods = {'home_delivery':'Hjemlevering','mailbox_delivery':'Postkasse','pib_delivery':'Hentested','parcel_locker_delivery':'Pakkeboks','parcel_robot_delivery':'Leveringsrobot'} %}
-  {% set statuses = {'registered':'Registrert','in_transit':'Underveis','out_for_delivery':'Ut for levering','ready_for_pickup':'Klar for henting','delivered':'Levert','delayed':'Forsinket','returned':'Returnert','unknown':'Ukjent'} %}
-  {% set dots = {'Posten/Bring':'🔴','PostNord':'🔵','Helthjem':'🟡'} %}
   {% set ns = namespace(pkgs=[]) %}
   {% for s in states.sensor if s.attributes.packages is defined %}
   {%- set ns.pkgs = ns.pkgs + s.attributes.packages -%}
@@ -192,16 +189,18 @@ content: |
     {%- if p.delivery_window_start -%}{%- set eta = day ~ ' kl. ' ~ (as_timestamp(p.delivery_window_start)|timestamp_custom('%H:%M', true)) ~ '–' ~ (as_timestamp(p.delivery_window_end)|timestamp_custom('%H:%M', true)) -%}
     {%- else -%}{%- set eta = day -%}{%- endif -%}
   {%- endif -%}
-  | {{ dots.get(p.carrier,'⚪') }} | **{{ p.sender }}** | {{ methods.get(p.delivery_type, p.delivery_method) }} | {{ eta }} | {{ statuses.get(p.status, p.status) }} |
+  | {{ p.carrier_dot }} | **{{ p.sender }}** | {{ p.delivery_label }} | {{ eta }} | {{ p.status_label }} |
   {% endfor %}
   {% else %}
   _Ingen innkommende pakker akkurat nå._
   {% endif %}
 ```
 
-> This card automatically merges every carrier you've added (Posten and
-> PostNord) by scanning all sensors that expose a `packages` attribute — no
-> entity_id to hard-code. For a richer, colourful UI, the
+> The integration provides ready-to-display Norwegian labels (`status_label`,
+> `delivery_label`, `carrier_dot`), so the card needs no lookup tables. It also
+> merges every carrier you've added by scanning all sensors that expose a
+> `packages` attribute — no entity_id to hard-code. For a richer, colourful UI,
+> the
 > [Mushroom](https://github.com/piitaya/lovelace-mushroom) cards (via HACS) pair
 > nicely with the per-package entities.
 
@@ -231,9 +230,6 @@ recipient) without any custom cards, use this **Markdown card**:
 type: markdown
 title: 📦 Pakkedetaljer
 content: |
-  {% set methods = {'home_delivery':'Hjemlevering','mailbox_delivery':'Postkasse','pib_delivery':'Hentested','parcel_locker_delivery':'Pakkeboks'} %}
-  {% set statuses = {'registered':'Registrert','in_transit':'Underveis','out_for_delivery':'Ut for levering','ready_for_pickup':'Klar for henting','delivered':'Levert','delayed':'Forsinket','returned':'Returnert','unknown':'Ukjent'} %}
-  {% set dots = {'Posten/Bring':'🔴','PostNord':'🔵','Helthjem':'🟡'} %}
   {% set ns = namespace(pkgs=[]) %}
   {% for s in states.sensor if s.attributes.packages is defined %}
   {%- set ns.pkgs = ns.pkgs + s.attributes.packages -%}
@@ -241,8 +237,8 @@ content: |
   {% set pkgs = ns.pkgs %}
   {% if not pkgs %}_Ingen innkommende pakker._{% endif %}
   {% for p in pkgs %}
-  ## {{ dots.get(p.carrier,'⚪') }} {{ p.sender }} — {{ statuses.get(p.status, p.status) }}
-  **Levering:** {{ methods.get(p.delivery_type, p.delivery_method) }}{% if p.expected_delivery %} · {% if p.expected_delivery == now().strftime('%Y-%m-%d') %}I dag{% else %}{{ as_timestamp(p.expected_delivery)|timestamp_custom('%d.%m.%Y', true) }}{% endif %}{% if p.delivery_window_start %} kl. {{ as_timestamp(p.delivery_window_start)|timestamp_custom('%H:%M', true) }}–{{ as_timestamp(p.delivery_window_end)|timestamp_custom('%H:%M', true) }}{% endif %}{% endif %}<br>
+  ## {{ p.carrier_dot }} {{ p.sender }} — {{ p.status_label }}
+  **Levering:** {{ p.delivery_label }}{% if p.expected_delivery %} · {% if p.expected_delivery == now().strftime('%Y-%m-%d') %}I dag{% else %}{{ as_timestamp(p.expected_delivery)|timestamp_custom('%d.%m.%Y', true) }}{% endif %}{% if p.delivery_window_start %} kl. {{ as_timestamp(p.delivery_window_start)|timestamp_custom('%H:%M', true) }}–{{ as_timestamp(p.delivery_window_end)|timestamp_custom('%H:%M', true) }}{% endif %}{% endif %}<br>
   **Kollinummer:** `{{ p.kollinummer }}`<br>
   **Sendingsnummer:** `{{ p.sendingsnummer }}`<br>
   {%- set loc = ((p.recipient_postal_code or '') ~ ' ' ~ (p.recipient_city or '')) | trim -%}
