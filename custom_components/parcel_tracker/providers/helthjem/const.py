@@ -39,6 +39,20 @@ query GetPackages($page: Int!, $size: Int!, $types: [UserStatus!], $showHidden: 
 }
 """
 
+# The logged-in user's own address (the recipient for incoming parcels), used as
+# a fallback when a package has no per-order recipient address.
+USER_QUERY = """
+query GetUser {
+  getLoggedUser {
+    recipientAddresses {
+      city
+      zipCode
+      default
+    }
+  }
+}
+"""
+
 # Rich per-parcel tracking details (more fields than the web app itself asks for).
 DETAIL_QUERY = """
 query GetParcel($parcelReference: String!) {

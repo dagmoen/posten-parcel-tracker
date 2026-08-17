@@ -61,7 +61,11 @@ def _parse_events(detail: dict[str, Any]) -> list[ParcelEvent]:
     return events
 
 
-def build_parcel(item: dict[str, Any], detail: dict[str, Any] | None) -> Parcel | None:
+def build_parcel(
+    item: dict[str, Any],
+    detail: dict[str, Any] | None,
+    default_recipient: dict[str, Any] | None = None,
+) -> Parcel | None:
     """Combine a list item and its (optional) detail into a Parcel."""
     if not isinstance(item, dict):
         return None
@@ -76,7 +80,18 @@ def build_parcel(item: dict[str, Any], detail: dict[str, Any] | None) -> Parcel 
     shop = detail.get("shop") or item.get("shop") or {}
     service_point = detail.get("servicePoint") or {}
     estimated = detail.get("estimatedDelivery") or {}
-    recipient = (item.get("orderData") or {}).get("recipientAddress") or {}
+    recipient = (
+        (item.get("orderData") or {}).get("recipientAddress")
+        or default_recipient
+        or {}
+    )
+
+    pickup_location = (
+        _as_str(service_point.get("name")) if isinstance(service_point, dict) else None
+    )
+    # Helthjem doesn't expose a delivery-method field; it's a pickup point if a
+    # service point is set, otherwise home delivery (the common case).
+    delivery_type = "pib_delivery" if pickup_location else "home_delivery"
 
     return Parcel(
         parcel_id=tracking,
@@ -91,9 +106,8 @@ def build_parcel(item: dict[str, Any], detail: dict[str, Any] | None) -> Parcel 
         expected_delivery=_parse_date(estimated.get("date"))
         if isinstance(estimated, dict)
         else None,
-        pickup_location=_as_str(service_point.get("name"))
-        if isinstance(service_point, dict)
-        else None,
+        delivery_type=delivery_type,
+        pickup_location=pickup_location,
         direction="receive",
         events=_parse_events(detail),
     )

@@ -29,6 +29,15 @@ class HelthjemProvider(Provider):
 
     async def async_get_parcels(self) -> Sequence[Parcel]:
         items = await self._client.async_get_packages()
+
+        # The recipient of incoming parcels is the account owner; fetch their
+        # default address once as a fallback (packages often omit it).
+        default_recipient = None
+        try:
+            default_recipient = await self._client.async_get_default_recipient()
+        except (ProviderTimeoutError, ProviderConnectionError):
+            default_recipient = None
+
         parcels: list[Parcel] = []
         for item in items:
             reference = item.get("trackingCode") if isinstance(item, dict) else None
@@ -40,7 +49,7 @@ class HelthjemProvider(Provider):
                     # A single flaky detail call shouldn't drop the parcel; fall
                     # back to the thinner list data. Auth errors still propagate.
                     detail = None
-            parcel = build_parcel(item, detail)
+            parcel = build_parcel(item, detail, default_recipient)
             if parcel is not None:
                 parcels.append(parcel)
         return parcels

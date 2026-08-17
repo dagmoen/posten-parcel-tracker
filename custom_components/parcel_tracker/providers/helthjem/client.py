@@ -21,6 +21,7 @@ from .const import (
     LIST_QUERY,
     REQUEST_TIMEOUT,
     USER_AGENT,
+    USER_QUERY,
 )
 
 
@@ -90,3 +91,14 @@ class HelthjemClient:
         """Return rich tracking details for one parcel reference."""
         data = await self._post(DETAIL_QUERY, {"parcelReference": reference})
         return data.get("getParcelTrackingDetails")
+
+    async def async_get_default_recipient(self) -> dict | None:
+        """Return the user's default recipient address ({city, zipCode})."""
+        data = await self._post(USER_QUERY, {})
+        addresses = (data.get("getLoggedUser") or {}).get("recipientAddresses") or []
+        if not addresses:
+            return None
+        return next(
+            (a for a in addresses if a.get("default")),
+            addresses[0],
+        )

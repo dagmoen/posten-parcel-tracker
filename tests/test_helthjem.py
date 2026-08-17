@@ -63,6 +63,18 @@ def _detail_response() -> dict:
     }
 
 
+def _user_response() -> dict:
+    return {
+        "data": {
+            "getLoggedUser": {
+                "recipientAddresses": [
+                    {"city": "Oslo", "zipCode": "1169", "default": True}
+                ]
+            }
+        }
+    }
+
+
 def test_status_normalization() -> None:
     assert normalize_status("DELIVERING") is ParcelStatus.OUT_FOR_DELIVERY
     assert normalize_status("IN_TRANSIT") is ParcelStatus.IN_TRANSIT
@@ -84,6 +96,26 @@ def test_build_parcel_merges_list_and_detail() -> None:
     assert parcel.expected_delivery == date(2026, 8, 18)
     assert parcel.recipient_city == "Oslo"
     assert parcel.direction == "receive"
+    # No service point -> home delivery ("leveres hjem").
+    assert parcel.delivery_type == "home_delivery"
+
+
+def test_build_parcel_uses_default_recipient_when_missing() -> None:
+    item = {"id": "9", "trackingCode": "TC9", "userStatus": "RECEIVED", "orderData": None}
+    parcel = build_parcel(item, None, {"city": "Bergen", "zipCode": "5000"})
+    assert parcel is not None
+    assert parcel.recipient_city == "Bergen"
+    assert parcel.recipient_postal_code == "5000"
+
+
+def test_build_parcel_pickup_point() -> None:
+    item = _list_response()["data"]["getUserPackages"]["data"][0]
+    detail = _detail_response()["data"]["getParcelTrackingDetails"]
+    detail = {**detail, "servicePoint": {"name": "Joker Ljan", "address": "Ljansv 1"}}
+    parcel = build_parcel(item, detail)
+    assert parcel is not None
+    assert parcel.delivery_type == "pib_delivery"
+    assert parcel.pickup_location == "Joker Ljan"
     assert len(parcel.events) == 2
     assert parcel.events[0].description == "Ut for levering"
     assert parcel.events[0].location == "OSLO"
@@ -101,9 +133,13 @@ async def test_client_auth_error_on_unauthenticated() -> None:
 
 @pytest.mark.asyncio
 async def test_provider_end_to_end() -> None:
-    # First POST -> list, second POST -> detail.
+    # POST order: list -> getLoggedUser -> detail.
     session = FakeSession(
-        [fake_json_response(_list_response()), fake_json_response(_detail_response())]
+        [
+            fake_json_response(_list_response()),
+            fake_json_response(_user_response()),
+            fake_json_response(_detail_response()),
+        ]
     )
     provider = HelthjemProvider(session, "session_token=abc")
     parcels = list(await provider.async_get_parcels())

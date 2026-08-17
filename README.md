@@ -175,7 +175,7 @@ title: 📦 Innkommende pakker
 content: |
   {% set methods = {'home_delivery':'Hjemlevering','mailbox_delivery':'Postkasse','pib_delivery':'Hentested','parcel_locker_delivery':'Pakkeboks','parcel_robot_delivery':'Leveringsrobot'} %}
   {% set statuses = {'registered':'Registrert','in_transit':'Underveis','out_for_delivery':'Ut for levering','ready_for_pickup':'Klar for henting','delivered':'Levert','delayed':'Forsinket','returned':'Returnert','unknown':'Ukjent'} %}
-  {% set dots = {'Posten/Bring':'🔴','PostNord':'🔵'} %}
+  {% set dots = {'Posten/Bring':'🔴','PostNord':'🔵','Helthjem':'🟡'} %}
   {% set ns = namespace(pkgs=[]) %}
   {% for s in states.sensor if s.attributes.packages is defined %}
   {%- set ns.pkgs = ns.pkgs + s.attributes.packages -%}
@@ -232,8 +232,8 @@ type: markdown
 title: 📦 Pakkedetaljer
 content: |
   {% set methods = {'home_delivery':'Hjemlevering','mailbox_delivery':'Postkasse','pib_delivery':'Hentested','parcel_locker_delivery':'Pakkeboks'} %}
-  {% set statuses = {'registered':'Registrert','in_transit':'Underveis','ready_for_pickup':'Klar for henting','delivered':'Levert','delayed':'Forsinket'} %}
-  {% set dots = {'Posten/Bring':'🔴','PostNord':'🔵'} %}
+  {% set statuses = {'registered':'Registrert','in_transit':'Underveis','out_for_delivery':'Ut for levering','ready_for_pickup':'Klar for henting','delivered':'Levert','delayed':'Forsinket','returned':'Returnert','unknown':'Ukjent'} %}
+  {% set dots = {'Posten/Bring':'🔴','PostNord':'🔵','Helthjem':'🟡'} %}
   {% set ns = namespace(pkgs=[]) %}
   {% for s in states.sensor if s.attributes.packages is defined %}
   {%- set ns.pkgs = ns.pkgs + s.attributes.packages -%}
@@ -245,7 +245,9 @@ content: |
   **Levering:** {{ methods.get(p.delivery_type, p.delivery_method) }}{% if p.expected_delivery %} · {% if p.expected_delivery == now().strftime('%Y-%m-%d') %}I dag{% else %}{{ as_timestamp(p.expected_delivery)|timestamp_custom('%d.%m.%Y', true) }}{% endif %}{% if p.delivery_window_start %} kl. {{ as_timestamp(p.delivery_window_start)|timestamp_custom('%H:%M', true) }}–{{ as_timestamp(p.delivery_window_end)|timestamp_custom('%H:%M', true) }}{% endif %}{% endif %}<br>
   **Kollinummer:** `{{ p.kollinummer }}`<br>
   **Sendingsnummer:** `{{ p.sendingsnummer }}`<br>
-  **Mottaker:** {{ p.recipient }}{% if p.recipient_address %}, {{ p.recipient_address }}{% endif %}{% if p.recipient_city %} {{ p.recipient_city }}{% endif %}<br>
+  {%- set loc = ((p.recipient_postal_code or '') ~ ' ' ~ (p.recipient_city or '')) | trim -%}
+  {%- set rc = [p.recipient, p.recipient_address, loc] | select | list -%}
+  **Mottaker:** {{ rc | join(', ') if rc else '—' }}<br>
   **Vekt:** {{ p.weight_kg or '—' }} kg · **Størrelse:** {{ p.dimensions or '—' }}
 
   **Sporing:**
