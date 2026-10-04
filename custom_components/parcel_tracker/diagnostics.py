@@ -8,11 +8,17 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_ACCESS_TOKEN, CONF_REFRESH_TOKEN, CONF_TOKEN_EXPIRES_AT
+from .const import (
+    CONF_ACCESS_TOKEN,
+    CONF_COOKIE,
+    CONF_REFRESH_TOKEN,
+    CONF_TOKEN_EXPIRES_AT,
+)
 from .coordinator import ParcelUpdateCoordinator
 
 TO_REDACT = {
     CONF_ACCESS_TOKEN,
+    CONF_COOKIE,
     CONF_REFRESH_TOKEN,
     CONF_TOKEN_EXPIRES_AT,
     "tracking_number",

@@ -59,7 +59,7 @@ def build_authorize_url(state: str, lang: str = "no") -> str:
     return f"{ID_BASE}{OAUTH_SERVICE}/{OAUTH_AUTHORIZE_PATH}?{urlencode(params)}"
 
 
-def extract_code(pasted: str) -> str:
+def extract_code(pasted: str, expected_state: str | None = None) -> str:
     """Extract the authorization code from user-pasted input.
 
     Accepts either the bare code, or the full ``posten://login?code=...&state=..``
@@ -73,7 +73,12 @@ def extract_code(pasted: str) -> str:
     if looks_like_url:
         # Custom-scheme URLs parse fine with urlparse for the query part.
         query = urlparse(value).query or value.split("?", 1)[-1]
-        codes = parse_qs(query).get("code")
+        params = parse_qs(query)
+        codes = params.get("code")
+        if expected_state is not None:
+            states = params.get("state")
+            if not states or states[0] != expected_state:
+                raise AuthenticationError("OAuth state mismatch")
         if codes and codes[0]:
             return codes[0]
         raise AuthenticationError("Could not find 'code' in the pasted URL")

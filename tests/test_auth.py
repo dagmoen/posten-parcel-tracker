@@ -48,6 +48,28 @@ def test_extract_code_rejects_bad_input(bad: str) -> None:
         extract_code(bad)
 
 
+def test_extract_code_validates_oauth_state_for_callback_url() -> None:
+    assert extract_code(
+        "posten://login?code=XYZ789&state=expected", expected_state="expected"
+    ) == "XYZ789"
+
+
+@pytest.mark.parametrize(
+    "pasted",
+    [
+        "posten://login?code=XYZ789&state=wrong",
+        "posten://login?code=XYZ789",
+    ],
+)
+def test_extract_code_rejects_invalid_oauth_state(pasted: str) -> None:
+    with pytest.raises(AuthenticationError, match="OAuth state mismatch"):
+        extract_code(pasted, expected_state="expected")
+
+
+def test_extract_code_preserves_bare_code_compatibility() -> None:
+    assert extract_code("ABC123", expected_state="expected") == "ABC123"
+
+
 def test_basic_auth_header_encoding() -> None:
     header = auth_mod._basic_auth_header()
     assert header.startswith("Basic ")

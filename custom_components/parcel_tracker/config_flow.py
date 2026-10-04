@@ -73,7 +73,7 @@ class ParcelTrackerConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                code = extract_code(user_input[CONF_AUTH_CODE])
+                code = extract_code(user_input[CONF_AUTH_CODE], expected_state=self._state)
                 session = async_get_clientsession(self.hass)
                 auth = PostenAuth(session)
                 token = await auth.async_exchange_code(code)
